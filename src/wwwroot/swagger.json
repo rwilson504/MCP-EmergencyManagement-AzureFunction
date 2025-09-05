@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Veterans Affairs MCP",
-    "description": "Veterans Affairs MCP",
+    "title": "Emergency Management MCP",
+    "description": "Emergency Management MCP that provides tools for emergency repsonders",
     "version": "1.0.0"
   },
   "host": "your.azure.function.host",
@@ -11,7 +11,7 @@
   "paths": {
     "/mcp": {
       "get": {
-        "summary": "MCP Server Actions",
+        "summary": "Emergency Management",
         "x-ms-agentic-protocol": "mcp-streamable-1.0",
         "operationId": "InvokeMCP",
         "responses": {

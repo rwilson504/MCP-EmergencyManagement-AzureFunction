@@ -42,5 +42,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Middleware\" />
+    <Folder Include="OpenAPI\" />
   </ItemGroup>
 </Project>
