@@ -25,6 +25,17 @@ param storageAccountName string = ''
 param vNetName string = ''
 param disableLocalAuth bool = true
 
+// Fire-Aware Routing Parameters
+@description('Azure Maps account name (must be globally unique in subscription)')
+param mapsAccountName string = ''
+
+@description('Azure Maps SKU')
+@allowed(['G2'])
+param mapsSku string = 'G2'
+
+@description('Geo cache container name')
+param geoCacheContainerName string = 'routing-cache'
+
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var tags = { 'azd-env-name': environmentName }
@@ -64,6 +75,20 @@ module appServicePlan './core/host/appserviceplan.bicep' = {
   }
 }
 
+// Azure Maps account for fire-aware routing
+var finalMapsAccountName = !empty(mapsAccountName) ? mapsAccountName : 'maps-${resourceToken}'
+
+module maps 'core/security/maps.bicep' = {
+  name: 'maps'
+  scope: rg
+  params: {
+    name: finalMapsAccountName
+    location: location
+    sku: mapsSku
+    tags: tags
+  }
+}
+
 module api './app/api.bicep' = {
   name: 'api'
   scope: rg
@@ -80,6 +105,11 @@ module api './app/api.bicep' = {
     identityId: apiUserAssignedIdentity.outputs.identityId
     identityClientId: apiUserAssignedIdentity.outputs.identityClientId
     appSettings: {
+      'Storage:BlobServiceUrl': 'https://${storage.outputs.name}.blob.core.windows.net'
+      'Storage:CacheContainer': geoCacheContainerName
+      'Fires:ArcGisFeatureUrl': 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Wildland_Fire_Perimeters_ToDate/FeatureServer/0/query'
+      'Maps:RouteBase': 'https://atlas.microsoft.com'
+      'Maps:Key': maps.outputs.primaryKey
     }
     virtualNetworkSubnetId: !vnetEnabled ? '' : serviceVirtualNetwork.outputs.appSubnetID
   }
@@ -93,7 +123,7 @@ module storage './core/storage/storage-account.bicep' = {
     name: !empty(storageAccountName) ? storageAccountName : '${abbrs.storageStorageAccounts}${resourceToken}'
     location: location
     tags: tags
-    containers: [{name: deploymentStorageContainerName}, {name: 'snippets'}]
+    containers: [{name: deploymentStorageContainerName}, {name: 'snippets'}, {name: geoCacheContainerName}]
     publicNetworkAccess: vnetEnabled ? 'Disabled' : 'Enabled'
     networkAcls: !vnetEnabled ? {} : {
       defaultAction: 'Deny'
@@ -181,3 +211,5 @@ output AZURE_LOCATION string = location
 output AZURE_TENANT_ID string = tenant().tenantId
 output SERVICE_API_NAME string = api.outputs.SERVICE_API_NAME
 output AZURE_FUNCTION_NAME string = api.outputs.SERVICE_API_NAME
+output AZURE_MAPS_ACCOUNT_NAME string = maps.outputs.name
+output GEO_CACHE_CONTAINER_URI string = 'https://${storage.outputs.name}.blob.core.windows.net/${geoCacheContainerName}'
