@@ -75,6 +75,26 @@ An Azure Storage Emulator is needed for this particular sample because we will s
 
 >**Note** if you use Azurite coming from VS Code extension you need to run `Azurite: Start` now or you will see errors.
 
+2. **Configure Local Settings**
+
+   Copy the default settings template to create your local configuration:
+   
+   ```shell
+   cd src
+   cp default.local.settings.json local.settings.json
+   ```
+   
+   Edit `local.settings.json` and replace the placeholder values:
+   - `[YOUR_STORAGE_ACCOUNT_NAME]` - Replace with your Azure Storage account name, or leave as-is to use Azurite
+   - `[YOUR_AZURE_MAPS_PRIMARY_KEY]` - Replace with your Azure Maps primary key for routing services
+   
+   The file includes configuration for:
+   - **Fire Perimeter Data**: Uses WFIGS Interagency Perimeters (current incidents)
+   - **Azure Storage**: For caching fire perimeter GeoJSON data
+   - **Azure Maps**: For fire-aware route calculations
+   
+   >**Note**: The `local.settings.json` file is gitignored for security. Never commit secrets to version control.
+
 ## Run your MCP Server locally from the terminal
 
 1. From the `src` folder, run this command to start the Functions host locally:
