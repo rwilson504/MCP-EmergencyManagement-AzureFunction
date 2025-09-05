@@ -3,17 +3,17 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Mcp;
 using Microsoft.Extensions.Logging;
-using VeteransAffairsMCP.Services;
-using VeteransAffairsMCP.Common;
+using EmergencyManagementMCP.Services;
+using EmergencyManagementMCP.Common;
 
-namespace VeteransAffairsMCP.Tools
+namespace EmergencyManagementMCP.Tools
 {
     public class GetFacilityByIdTool
     {
-        private readonly VeteransAffairsService _service;
+        private readonly EmergencyManagementService _service;
         private readonly ILogger<GetFacilityByIdTool> _logger;
 
-        public GetFacilityByIdTool(VeteransAffairsService service, ILogger<GetFacilityByIdTool> logger)
+        public GetFacilityByIdTool(EmergencyManagementService service, ILogger<GetFacilityByIdTool> logger)
         {
             _service = service;
             _logger = logger;

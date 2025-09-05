@@ -1,4 +1,4 @@
-namespace VeteransAffairsMCP.Models
+namespace EmergencyManagementMCP.Models
 {
     public class ErrorResponse
     {

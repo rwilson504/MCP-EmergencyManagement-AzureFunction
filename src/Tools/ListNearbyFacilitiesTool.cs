@@ -3,17 +3,17 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Mcp;
 using Microsoft.Extensions.Logging;
-using VeteransAffairsMCP.Services;
-using VeteransAffairsMCP.Common;
+using EmergencyManagementMCP.Services;
+using EmergencyManagementMCP.Common;
 
-namespace VeteransAffairsMCP.Tools
+namespace EmergencyManagementMCP.Tools
 {
     public class ListNearbyFacilitiesTool
     {
-        private readonly VeteransAffairsService _service;
+        private readonly EmergencyManagementService _service;
         private readonly ILogger<ListNearbyFacilitiesTool> _logger;
 
-        public ListNearbyFacilitiesTool(VeteransAffairsService service, ILogger<ListNearbyFacilitiesTool> logger)
+        public ListNearbyFacilitiesTool(EmergencyManagementService service, ILogger<ListNearbyFacilitiesTool> logger)
         {
             _service = service;
             _logger = logger;

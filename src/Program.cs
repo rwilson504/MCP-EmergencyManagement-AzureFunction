@@ -1,8 +1,8 @@
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using VeteransAffairsMCP.Tools;
-using VeteransAffairsMCP.Services;
+using EmergencyManagementMCP.Tools;
+using EmergencyManagementMCP.Services;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 builder.ConfigureFunctionsWebApplication();
@@ -38,14 +38,14 @@ var listNearbyFacilities = builder.ConfigureMcpTool(ListNearbyFacilitiesTool.Too
 foreach (var prop in ListNearbyFacilitiesTool.Properties)
     listNearbyFacilities.WithProperty(prop.Name, prop.Type, prop.Description);
 
-// Register VeteransAffairsService with DI, including HttpClient and IConfiguration
-builder.Services.AddHttpClient<VeteransAffairsService>();
-builder.Services.AddTransient<VeteransAffairsService>(sp =>
+// Register EmergencyManagementService with DI, including HttpClient and IConfiguration
+builder.Services.AddHttpClient<EmergencyManagementService>();
+builder.Services.AddTransient<EmergencyManagementService>(sp =>
 {
     var httpClient = sp.GetRequiredService<HttpClient>();
-    var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<VeteransAffairsService>>();
+    var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<EmergencyManagementService>>();
     var config = sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
-    return new VeteransAffairsService(httpClient, logger, config);
+    return new EmergencyManagementService(httpClient, logger, config);
 });
 
 builder.Build().Run();

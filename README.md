@@ -1,7 +1,7 @@
 <!--
 ---
-name: VeteransAffairs MCP Server on Azure functions
-description: Run a remote Address Labs MCP server on Azure functions.  
+name: EmergencyManagement MCP Server on Azure functions
+description: Run a remote Emergency Management MCP server on Azure functions.  
 page_type: sample
 languages:
 - csharp
