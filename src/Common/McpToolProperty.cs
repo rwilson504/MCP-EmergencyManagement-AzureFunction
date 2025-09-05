@@ -1,4 +1,4 @@
-namespace VeteransAffairsMCP.Common
+namespace EmergencyManagementMCP.Common
 {
     public class McpToolProperty
     {

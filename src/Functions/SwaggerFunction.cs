@@ -7,7 +7,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 
-namespace VeteransAffairsMCP.Functions
+namespace EmergencyManagementMCP.Functions
 {
     public class SwaggerFunction
     {

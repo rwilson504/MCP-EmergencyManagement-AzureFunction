@@ -1,23 +1,23 @@
 using System.Text.Json;
 using System.Net.Http.Json;
-using VeteransAffairsMCP.Models;
+using EmergencyManagementMCP.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace VeteransAffairsMCP.Services
+namespace EmergencyManagementMCP.Services
 {
-    public class VeteransAffairsService
+    public class EmergencyManagementService
     {
         private readonly HttpClient _httpClient;
-        private readonly ILogger<VeteransAffairsService> _logger;
+        private readonly ILogger<EmergencyManagementService> _logger;
         private readonly string _apiKey;
         private readonly string _apiHost;
-        public VeteransAffairsService(HttpClient httpClient, ILogger<VeteransAffairsService> logger, IConfiguration config)
+        public EmergencyManagementService(HttpClient httpClient, ILogger<EmergencyManagementService> logger, IConfiguration config)
         {
             _logger = logger;
-            _logger.LogInformation("VeteransAffairsService initialized");
+            _logger.LogInformation("EmergencyManagementService initialized");
             _httpClient = httpClient;
             _apiKey = config["VA_API_KEY"] ?? string.Empty;
             _apiHost = config["VA_API_HOST"] ?? "sandbox-api.va.gov";

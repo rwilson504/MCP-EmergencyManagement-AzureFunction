@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace VeteransAffairsMCP.Common
+namespace EmergencyManagementMCP.Common
 {
     public static class McpToolParameterHelper
     {
