@@ -1,0 +1,10 @@
+{
+  "inputs": [],
+  "servers": {
+    "MS Learn": {
+      "type": "sse",
+      "url": "https://learn.microsoft.com/api/mcp",
+      "headers": {}
+    }
+  }
+}
