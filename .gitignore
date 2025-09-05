@@ -362,5 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Ignore settings files
-*.settings.json
+# Ignore local settings files but allow default template
+local.settings.json
+!default.local.settings.json
