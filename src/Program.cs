@@ -38,6 +38,11 @@ var listNearbyFacilities = builder.ConfigureMcpTool(ListNearbyFacilitiesTool.Too
 foreach (var prop in ListNearbyFacilitiesTool.Properties)
     listNearbyFacilities.WithProperty(prop.Name, prop.Type, prop.Description);
 
+// MCP Tool: Fire-Aware Routing
+var routingFireAwareShortest = builder.ConfigureMcpTool(RoutingFireAwareShortestTool.ToolName);
+foreach (var prop in RoutingFireAwareShortestTool.Properties)
+    routingFireAwareShortest.WithProperty(prop.Name, prop.Type, prop.Description);
+
 // Register EmergencyManagementService with DI, including HttpClient and IConfiguration
 builder.Services.AddHttpClient<EmergencyManagementService>();
 builder.Services.AddTransient<EmergencyManagementService>(sp =>
@@ -47,5 +52,11 @@ builder.Services.AddTransient<EmergencyManagementService>(sp =>
     var config = sp.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
     return new EmergencyManagementService(httpClient, logger, config);
 });
+
+// Register Fire-Aware Routing Services
+builder.Services.AddHttpClient<IGeoServiceClient, GeoServiceClient>();
+builder.Services.AddHttpClient<IRouterClient, RouterClient>();
+builder.Services.AddSingleton<IGeoJsonCache, GeoJsonCache>();
+builder.Services.AddSingleton<IGeometryUtils, GeometryUtils>();
 
 builder.Build().Run();

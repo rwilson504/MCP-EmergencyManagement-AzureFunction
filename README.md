@@ -17,20 +17,20 @@ urlFragment: remote-mcp-functions-dotnet
 <!-- Introduction: what this MCP server is dedicated to -->
 ## Introduction
 
-Address parsing is not rocket surgery!
+Emergency management requires real-time, intelligent decision-making tools that can adapt to rapidly changing conditions.
 
-Free and simple API to integrate parsing of unstructured United States addresses into your applications.
+This MCP server provides emergency management tools including facility search, service location, and fire-aware routing capabilities.
 
 ---
 
-This MCP server is dedicated to helping developers:
+This MCP server is dedicated to helping emergency management professionals and applications:
 
-- Parse unstructured address data
-- Format addresses based on USPS guidelines
-- Use a hosted API with no software to install or update
-- Integrate easily with minimal setup
+- Search for emergency facilities and services within specific areas or drive times
+- Get detailed information about facility capabilities and services
+- Compute fire-aware routes that avoid wildfire perimeters and closures
+- Access real-time emergency management data through standardized APIs
 
-Use this server to normalize and validate free-form US addresses before storing, displaying, or sending them to downstream systems.
+Use this server to integrate emergency management capabilities into your applications, ensuring responders have access to the most current information for effective decision-making.
 
 # Getting Started with Remote MCP Servers using Azure Functions (.NET/C#)
 
@@ -128,6 +128,65 @@ Note by default this will use the webhooks route: `/runtime/webhooks/mcp/sse`.  
     ```
 1. **List Tools**.  Click on a tool and **Run Tool**.  
 
+## Available MCP Tools
+
+### Emergency Facility Management
+- **ListFacilities** - Search for emergency facilities with filtering by location, services, and facility type
+- **GetFacilityById** - Get detailed information about a specific facility
+- **ListFacilityServices** - List services available at a specific facility
+- **GetFacilityServiceDetails** - Get detailed information about specific facility services
+- **ListFacilityIds** - Get a list of facility IDs filtered by type
+- **ListNearbyFacilities** - Find facilities within a specified drive time from a location
+
+### Fire-Aware Routing
+- **routing.fireAwareShortest** - Compute the shortest route while avoiding wildfire perimeters and closures
+
+#### Fire-Aware Routing Tool
+
+The `routing.fireAwareShortest` tool provides intelligent routing that avoids active wildfire perimeters and road closures, ensuring safer travel routes during emergency conditions.
+
+**Parameters:**
+```json
+{
+  "origin": { "lat": 34.0522, "lon": -118.2437 },
+  "destination": { "lat": 34.1625, "lon": -118.1331 },
+  "bufferKm": 2.0,
+  "useClosures": true,
+  "departAtIsoUtc": "2025-09-05T13:00:00Z"
+}
+```
+
+**Response:**
+```json
+{
+  "route": {
+    "distanceMeters": 15420,
+    "travelTimeSeconds": 1140,
+    "polylineGeoJson": "{\"type\":\"LineString\",\"coordinates\":[...]}"
+  },
+  "appliedAvoids": ["minLon,minLat,maxLon,maxLat"],
+  "traceId": "abc12345"
+}
+```
+
+**Key Features:**
+- Fetches real-time wildfire perimeter data from ArcGIS services
+- Caches fire data for 10 minutes to optimize performance
+- Applies configurable buffer zones around fire perimeters
+- Integrates with Azure Maps for route calculation
+- Supports optional road closure avoidance
+- Returns GeoJSON LineString for route visualization
+
+**Sample Test Payload:**
+```json
+{
+  "origin": { "lat": 34.0522, "lon": -118.2437 },
+  "destination": { "lat": 34.1625, "lon": -118.1331 },
+  "bufferKm": 3.0,
+  "useClosures": true
+}
+```
+
 ## Deploy to Azure for Remote MCP
 
 Run this [azd](https://aka.ms/azd) command to provision the function app, with any required Azure resources, and deploy your code:
@@ -135,6 +194,27 @@ Run this [azd](https://aka.ms/azd) command to provision the function app, with a
 ```shell
 azd up
 ```
+
+**Infrastructure Components:**
+
+The deployment includes the following Azure resources for emergency management capabilities:
+
+- **Azure Functions** - Hosts the MCP server with .NET 8 isolated runtime
+- **Azure Storage Account** - Provides blob storage for:
+  - Function deployment packages
+  - Code snippets storage
+  - **Geo cache container** - Caches wildfire perimeter GeoJSON data with TTL
+- **Azure Maps Account** - Provides routing services for fire-aware route calculations
+- **Application Insights** - Monitoring and logging for the MCP server
+- **Managed Identity** - Secure access between services without storing credentials
+
+**Configuration:**
+
+The deployment automatically configures:
+- Blob storage container (`routing-cache`) for geographic data caching
+- Azure Maps integration with primary key injection
+- Managed Identity with appropriate RBAC permissions
+- Fire perimeter data source (ArcGIS/NIFC) endpoints
 
 You can opt-in to a VNet being used in the sample. To do so, do this before `azd up`
 
