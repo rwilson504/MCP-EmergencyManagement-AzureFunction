@@ -39,12 +39,12 @@ param geoCacheContainerName string = 'routing-cache'
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var tags = { 'azd-env-name': environmentName }
-var functionAppName = !empty(apiServiceName) ? apiServiceName : '${abbrs.webSitesFunctions}api-${resourceToken}'
+var functionAppName = !empty(apiServiceName) ? apiServiceName : 'doem-${abbrs.webSitesFunctions}api-${resourceToken}'
 var deploymentStorageContainerName = 'app-package-${take(functionAppName, 32)}-${take(toLower(uniqueString(functionAppName, resourceToken)), 7)}'
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
-  name: !empty(resourceGroupName) ? resourceGroupName : '${abbrs.resourcesResourceGroups}${environmentName}'
+  name: !empty(resourceGroupName) ? resourceGroupName : 'doem-${abbrs.resourcesResourceGroups}${environmentName}'
   location: location
   tags: tags
 }
@@ -56,7 +56,7 @@ module apiUserAssignedIdentity './core/identity/userAssignedIdentity.bicep' = {
   params: {
     location: location
     tags: tags
-    identityName: !empty(apiUserAssignedIdentityName) ? apiUserAssignedIdentityName : '${abbrs.managedIdentityUserAssignedIdentities}api-${resourceToken}'
+    identityName: !empty(apiUserAssignedIdentityName) ? apiUserAssignedIdentityName : 'doem-${abbrs.managedIdentityUserAssignedIdentities}api-${resourceToken}'
   }
 }
 
@@ -65,7 +65,7 @@ module appServicePlan './core/host/appserviceplan.bicep' = {
   name: 'appserviceplan'
   scope: rg
   params: {
-    name: !empty(appServicePlanName) ? appServicePlanName : '${abbrs.webServerFarms}${resourceToken}'
+    name: !empty(appServicePlanName) ? appServicePlanName : 'doem-${abbrs.webServerFarms}${resourceToken}'
     location: location
     tags: tags
     sku: {
@@ -76,7 +76,7 @@ module appServicePlan './core/host/appserviceplan.bicep' = {
 }
 
 // Azure Maps account for fire-aware routing
-var finalMapsAccountName = !empty(mapsAccountName) ? mapsAccountName : 'maps-${resourceToken}'
+var finalMapsAccountName = !empty(mapsAccountName) ? mapsAccountName : 'doem-maps-${resourceToken}'
 
 module maps 'core/security/maps.bicep' = {
   name: 'maps'
@@ -120,7 +120,7 @@ module storage './core/storage/storage-account.bicep' = {
   name: 'storage'
   scope: rg
   params: {
-    name: !empty(storageAccountName) ? storageAccountName : '${abbrs.storageStorageAccounts}${resourceToken}'
+    name: !empty(storageAccountName) ? storageAccountName : 'doem${abbrs.storageStorageAccounts}${resourceToken}'
     location: location
     tags: tags
     containers: [{name: deploymentStorageContainerName}, {name: 'snippets'}, {name: geoCacheContainerName}]
@@ -163,7 +163,7 @@ module serviceVirtualNetwork 'app/vnet.bicep' =  if (vnetEnabled) {
   params: {
     location: location
     tags: tags
-    vNetName: !empty(vNetName) ? vNetName : '${abbrs.networkVirtualNetworks}${resourceToken}'
+    vNetName: !empty(vNetName) ? vNetName : 'doem-${abbrs.networkVirtualNetworks}${resourceToken}'
   }
 }
 
@@ -173,7 +173,7 @@ module storagePrivateEndpoint 'app/storage-PrivateEndpoint.bicep' = if (vnetEnab
   params: {
     location: location
     tags: tags
-    virtualNetworkName: !empty(vNetName) ? vNetName : '${abbrs.networkVirtualNetworks}${resourceToken}'
+    virtualNetworkName: !empty(vNetName) ? vNetName : 'doem-${abbrs.networkVirtualNetworks}${resourceToken}'
     subnetName: !vnetEnabled ? '' : serviceVirtualNetwork.outputs.peSubnetName
     resourceName: storage.outputs.name
   }
@@ -186,8 +186,8 @@ module monitoring './core/monitor/monitoring.bicep' = {
   params: {
     location: location
     tags: tags
-    logAnalyticsName: !empty(logAnalyticsName) ? logAnalyticsName : '${abbrs.operationalInsightsWorkspaces}${resourceToken}'
-    applicationInsightsName: !empty(applicationInsightsName) ? applicationInsightsName : '${abbrs.insightsComponents}${resourceToken}'
+    logAnalyticsName: !empty(logAnalyticsName) ? logAnalyticsName : 'doem-${abbrs.operationalInsightsWorkspaces}${resourceToken}'
+    applicationInsightsName: !empty(applicationInsightsName) ? applicationInsightsName : 'doem-${abbrs.insightsComponents}${resourceToken}'
     disableLocalAuth: disableLocalAuth  
   }
 }
