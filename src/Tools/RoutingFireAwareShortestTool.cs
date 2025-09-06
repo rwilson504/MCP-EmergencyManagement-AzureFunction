@@ -38,41 +38,57 @@ namespace EmergencyManagementMCP.Tools
         {
             var traceId = Guid.NewGuid().ToString("N")[..8];
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            
-            _logger.LogInformation("Starting fire-aware routing request: origin=({OriginLat},{OriginLon}), destination=({DestLat},{DestLon}), bufferKm={BufferKm}, useClosures={UseClosures}, traceId={TraceId}",
-                request.origin.lat, request.origin.lon, request.destination.lat, request.destination.lon, request.bufferKm, request.useClosures, traceId);
+
+            _logger.LogInformation("Starting fire-aware routing request: origin=({OriginLat},{OriginLon}), destination=({DestinationLat},{DestinationLon}), avoidBufferMeters={AvoidBufferMeters}, profile={Profile}, departAtIsoUtc={DepartAtIsoUtc}, traceId={TraceId}",
+                request.OriginLat, request.OriginLon, request.DestinationLat, request.DestinationLon, request.AvoidBufferMeters, request.Profile, request.DepartAtIsoUtc, traceId);
 
             // Validate input parameters
-            if (!IsValidCoordinate(request.origin.lat, request.origin.lon))
+            if (!IsValidCoordinate(request.OriginLat, request.OriginLon))
             {
                 _logger.LogError("Invalid origin coordinates: lat={Lat}, lon={Lon}, traceId={TraceId}", 
-                    request.origin.lat, request.origin.lon, traceId);
+                    request.OriginLat, request.OriginLon, traceId);
                 return CreateErrorResponse("Invalid origin coordinates", traceId);
             }
 
-            if (!IsValidCoordinate(request.destination.lat, request.destination.lon))
+            if (!IsValidCoordinate(request.DestinationLat, request.DestinationLon))
             {
                 _logger.LogError("Invalid destination coordinates: lat={Lat}, lon={Lon}, traceId={TraceId}", 
-                    request.destination.lat, request.destination.lon, traceId);
+                    request.DestinationLat, request.DestinationLon, traceId);
                 return CreateErrorResponse("Invalid destination coordinates", traceId);
             }
 
-            if (request.bufferKm < 0 || request.bufferKm > 100)
+            double bufferKm = (request.AvoidBufferMeters ?? 2000) / 1000.0;
+            if (bufferKm < 0 || bufferKm > 100)
             {
-                _logger.LogError("Invalid buffer distance: {BufferKm}km, traceId={TraceId}", request.bufferKm, traceId);
+                _logger.LogError("Invalid buffer distance: {BufferKm}km, traceId={TraceId}", bufferKm, traceId);
                 return CreateErrorResponse("Buffer distance must be between 0 and 100 km", traceId);
+            }
+
+            DateTime? departAt = null;
+            if (!string.IsNullOrEmpty(request.DepartAtIsoUtc))
+            {
+                if (DateTime.TryParse(request.DepartAtIsoUtc, out var parsedDt))
+                {
+                    departAt = parsedDt.ToUniversalTime();
+                }
+                else
+                {
+                    _logger.LogError("Invalid DepartAtIsoUtc format: {DepartAtIsoUtc}, traceId={TraceId}", 
+                        request.DepartAtIsoUtc, traceId);
+                    return CreateErrorResponse("Invalid DepartAtIsoUtc format", traceId);
+                }
             }
 
             try
             {
-                var origin = new Coordinate { Lat = request.origin.lat, Lon = request.origin.lon };
-                var destination = new Coordinate { Lat = request.destination.lat, Lon = request.destination.lon };
+                var origin = new Coordinate { Lat = request.OriginLat, Lon = request.OriginLon };
+                var destination = new Coordinate { Lat = request.DestinationLat, Lon = request.DestinationLon };
 
                 _logger.LogDebug("Step 1: Computing bounding box, traceId={TraceId}", traceId);
                 var stepStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 
                 // 1. Compute bounding box with buffer
-                var bbox = _geometryUtils.ComputeBBox(origin, destination, request.bufferKm);
+                var bbox = _geometryUtils.ComputeBBox(origin, destination, bufferKm);
                 
                 stepStopwatch.Stop();
                 _logger.LogDebug("Step 1 completed in {ElapsedMs}ms: bbox computed, traceId={TraceId}", 
@@ -99,48 +115,27 @@ namespace EmergencyManagementMCP.Tools
                 stepStopwatch.Restart();
                 
                 // 4. Build avoid rectangles from fire perimeters (cap at 10)
-                var avoidRectangles = _geometryUtils.BuildAvoidRectanglesFromGeoJson(fireGeoJson, request.bufferKm, 10);
+                var avoidRectangles = _geometryUtils.BuildAvoidRectanglesFromGeoJson(fireGeoJson, bufferKm, 10);
                 
                 stepStopwatch.Stop();
                 _logger.LogDebug("Step 4 completed in {ElapsedMs}ms: {Count} avoid rectangles built, traceId={TraceId}", 
                     stepStopwatch.ElapsedMilliseconds, avoidRectangles.Count, traceId);
 
-                // 5. Optionally add closure rectangles
-                if (request.useClosures)
-                {
-                    _logger.LogDebug("Step 5: Fetching closure rectangles, traceId={TraceId}", traceId);
-                    stepStopwatch.Restart();
-                    
-                    var closureRectangles = await _geoServiceClient.TryFetchClosureRectanglesAsync(bbox);
-                    var availableSlots = Math.Max(0, 10 - avoidRectangles.Count);
-                    var closuresToAdd = closureRectangles.Take(availableSlots).ToList();
-                    avoidRectangles.AddRange(closuresToAdd);
-                    
-                    stepStopwatch.Stop();
-                    _logger.LogDebug("Step 5 completed in {ElapsedMs}ms: {ClosureCount} closures added (of {TotalClosures} available), traceId={TraceId}", 
-                        stepStopwatch.ElapsedMilliseconds, closuresToAdd.Count, closureRectangles.Count, traceId);
-                }
-                else
-                {
-                    _logger.LogDebug("Step 5: Skipped closure rectangles (useClosures=false), traceId={TraceId}", traceId);
-                }
+                // 5. Optionally add closure rectangles (always included for flat model)
+                _logger.LogDebug("Step 5: Fetching closure rectangles, traceId={TraceId}", traceId);
+                stepStopwatch.Restart();
+                
+                var closureRectangles = await _geoServiceClient.TryFetchClosureRectanglesAsync(bbox);
+                var availableSlots = Math.Max(0, 10 - avoidRectangles.Count);
+                var closuresToAdd = closureRectangles.Take(availableSlots).ToList();
+                avoidRectangles.AddRange(closuresToAdd);
+                
+                stepStopwatch.Stop();
+                _logger.LogDebug("Step 5 completed in {ElapsedMs}ms: {ClosureCount} closures added (of {TotalClosures} available), traceId={TraceId}", 
+                    stepStopwatch.ElapsedMilliseconds, closuresToAdd.Count, closureRectangles.Count, traceId);
 
-                // 6. Parse departure time if provided
-                DateTime? departAt = null;
-                if (!string.IsNullOrEmpty(request.departAtIsoUtc))
-                {
-                    _logger.LogDebug("Step 6: Parsing departure time: {DepartAt}, traceId={TraceId}", request.departAtIsoUtc, traceId);
-                    if (DateTime.TryParse(request.departAtIsoUtc, out var parsedDate))
-                    {
-                        departAt = parsedDate.ToUniversalTime();
-                        _logger.LogDebug("Departure time parsed successfully: {DepartAt} UTC, traceId={TraceId}", departAt, traceId);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Failed to parse departure time: {DepartAt}, using current time, traceId={TraceId}", 
-                            request.departAtIsoUtc, traceId);
-                    }
-                }
+                // 6. Profile (not used in routing logic here, but could be passed to router)
+                string profile = request.Profile ?? "driving";
 
                 _logger.LogDebug("Step 7: Calculating route with {AvoidCount} avoid areas, traceId={TraceId}", 
                     avoidRectangles.Count, traceId);
@@ -203,27 +198,24 @@ namespace EmergencyManagementMCP.Tools
 
         public static readonly IReadOnlyList<McpToolProperty> Properties = new List<McpToolProperty>
         {
-            new McpToolProperty { Name = "origin", Type = "object", Description = "Origin coordinate with lat and lon properties." },
-            new McpToolProperty { Name = "destination", Type = "object", Description = "Destination coordinate with lat and lon properties." },
-            new McpToolProperty { Name = "bufferKm", Type = "number", Description = "Buffer distance in kilometers around fire perimeters to avoid. Default is 2.0." },
-            new McpToolProperty { Name = "useClosures", Type = "boolean", Description = "Whether to include road closures in avoidance. Default is true." },
-            new McpToolProperty { Name = "departAtIsoUtc", Type = "string", Description = "Optional departure time in ISO 8601 UTC format (e.g., '2025-09-05T13:00:00Z')." }
+            new McpToolProperty { Name = "OriginLat", Type = "number", Description = "Origin latitude.", Required = true },
+            new McpToolProperty { Name = "OriginLon", Type = "number", Description = "Origin longitude.", Required = true },
+            new McpToolProperty { Name = "DestinationLat", Type = "number", Description = "Destination latitude.", Required = true },
+            new McpToolProperty { Name = "DestinationLon", Type = "number", Description = "Destination longitude.", Required = true },
+            new McpToolProperty { Name = "AvoidBufferMeters", Type = "number", Description = "Buffer distance in meters around fire perimeters to avoid. Default is 2000.", Required = false },
+            new McpToolProperty { Name = "DepartAtIsoUtc", Type = "string", Description = "Optional departure time in ISO 8601 UTC format (e.g., 2023-08-01T15:30:00Z).", Required = false },
+            new McpToolProperty { Name = "Profile", Type = "string", Description = "Routing profile (e.g., driving, walking). Default is driving.", Required = false }
         };
     }
 
-    // POCO for Azure Function argument binding
-    public class RoutingFireAwareShortestRequest
+    public sealed class RoutingFireAwareShortestRequest
     {
-        public OriginDestinationCoordinate origin { get; set; } = new();
-        public OriginDestinationCoordinate destination { get; set; } = new();
-        public double bufferKm { get; set; } = 2.0;
-        public bool useClosures { get; set; } = true;
-        public string? departAtIsoUtc { get; set; }
-    }
-
-    public class OriginDestinationCoordinate
-    {
-        public double lat { get; set; }
-        public double lon { get; set; }
+        public required double OriginLat { get; set; }
+        public required double OriginLon { get; set; }
+        public required double DestinationLat { get; set; }
+        public required double DestinationLon { get; set; }
+        public double? AvoidBufferMeters { get; set; }
+        public string? DepartAtIsoUtc { get; set; }
+        public string? Profile { get; set; } = "driving";
     }
 }
