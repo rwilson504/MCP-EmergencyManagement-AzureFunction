@@ -4,14 +4,44 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
     "FUNCTIONS_EXTENSION_VERSION": "~4",
+    
+    "_comment_storage": "Replace with your actual storage account for testing cache functionality",
     "Storage__BlobServiceUrl": "https://[YOUR_STORAGE_ACCOUNT_NAME].blob.core.windows.net",
     "Storage__CacheContainer": "routing-cache",
+    
+    "_comment_fires": "ArcGIS service URL for fire perimeter data",
     "Fires__ArcGisFeatureUrl": "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query",
+    
+    "_comment_maps": "Replace with your Azure Maps subscription key",
     "Maps__RouteBase": "https://atlas.microsoft.com",
-    "Maps__Key": "[YOUR_AZURE_MAPS_PRIMARY_KEY]"
+    "Maps__Key": "[YOUR_AZURE_MAPS_PRIMARY_KEY]",
+    
+    "_comment_appinsights": "Optional: Add Application Insights connection string for local telemetry",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": "",
+    
+    "_comment_logging": "Enhanced logging settings for debugging",
+    "AZURE_CLIENT_ID": "",
+    "AZURE_CLIENT_SECRET": "",
+    "AZURE_TENANT_ID": ""
   },
   "Host": {
     "CORS": "*",
-    "CORSCredentials": false
+    "CORSCredentials": false,
+    "_comment_logging": "Enhanced logging configuration for local debugging",
+    "logging": {
+      "logLevel": {
+        "default": "Information",
+        "EmergencyManagementMCP": "Debug",
+        "Microsoft.Azure.Functions.Worker": "Information",
+        "Microsoft.AspNetCore": "Warning",
+        "System": "Warning",
+        "Azure.Core": "Warning",
+        "Azure.Storage": "Information"
+      },
+      "console": {
+        "isEnabled": true,
+        "includeScopes": true
+      }
+    }
   }
 }
