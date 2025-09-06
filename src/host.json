@@ -1,12 +1,25 @@
 {
   "version": "2.0",
   "logging": {
+    "logLevel": {
+      "default": "Information",
+      "EmergencyManagementMCP": "Debug",
+      "Microsoft.Azure.Functions.Worker": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "System": "Warning"
+    },
     "applicationInsights": {
       "samplingSettings": {
         "isEnabled": true,
         "excludedTypes": "Request"
       },
-      "enableLiveMetricsFilters": true
+      "enableLiveMetricsFilters": true,
+      "enableDependencyTracking": true,
+      "enablePerformanceCountersCollection": true
+    },
+    "console": {
+      "isEnabled": true,
+      "includeScopes": true
     }
   },
   "extensions": {
@@ -15,5 +28,13 @@
         "useAbsoluteUriForEndpoint": true
       }
     }
+  },
+  "functionTimeout": "00:05:00",
+  "healthMonitor": {
+    "enabled": true,
+    "healthCheckInterval": "00:00:10",
+    "healthCheckWindow": "00:02:00",
+    "healthCheckThreshold": 6,
+    "counterThreshold": 0.80
   }
 }
