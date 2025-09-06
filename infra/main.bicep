@@ -105,11 +105,11 @@ module api './app/api.bicep' = {
     identityId: apiUserAssignedIdentity.outputs.identityId
     identityClientId: apiUserAssignedIdentity.outputs.identityClientId
     appSettings: {
-      'Storage:BlobServiceUrl': 'https://${storage.outputs.name}.blob.core.windows.net'
-      'Storage:CacheContainer': geoCacheContainerName
-      'Fires:ArcGisFeatureUrl': 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Wildland_Fire_Perimeters_ToDate/FeatureServer/0/query'
-      'Maps:RouteBase': 'https://atlas.microsoft.com'
-      'Maps:Key': maps.outputs.primaryKey
+      'Storage__BlobServiceUrl': 'https://${storage.outputs.name}.blob.core.windows.net'
+      'Storage__CacheContainer': geoCacheContainerName
+      'Fires__ArcGisFeatureUrl': 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Wildland_Fire_Perimeters_ToDate/FeatureServer/0/query'
+      'Maps__RouteBase': 'https://atlas.microsoft.com'
+      'Maps__Key': maps.outputs.primaryKey
     }
     virtualNetworkSubnetId: !vnetEnabled ? '' : serviceVirtualNetwork.outputs.appSubnetID
   }

@@ -17,8 +17,8 @@ namespace EmergencyManagementMCP.Services
         {
             _httpClient = httpClient;
             _logger = logger;
-            _mapsKey = config["Maps:Key"] ?? throw new InvalidOperationException("Maps:Key configuration is required");
-            _routeBase = config["Maps:RouteBase"] ?? "https://atlas.microsoft.com";
+            _mapsKey = config["Maps__Key"] ?? throw new InvalidOperationException("Maps:Key configuration is required");
+            _routeBase = config["Maps__RouteBase"] ?? "https://atlas.microsoft.com";
         }
 
         public async Task<RouteResult> GetRouteAsync(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas, DateTime? departAt = null)

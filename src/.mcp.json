@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "emergencyman": {
+      "url": "https://<yourwebsite>.azurewebsites.net/runtime/webhooks/mcp?code=<yourmcptoken>",
+      "description": "Emergency Management API"
+    }
+  }
+}

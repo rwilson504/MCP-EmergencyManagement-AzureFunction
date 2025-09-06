@@ -364,4 +364,8 @@ FodyWeavers.xsd
 
 # Ignore local settings files but allow default template
 local.settings.json
-!default.local.settings.json
+
+__azurite*
+AzuriteConfig
+__blobstorage__/
+__queuestorage__/

@@ -15,12 +15,12 @@ namespace EmergencyManagementMCP.Services
         public GeoJsonCache(ILogger<GeoJsonCache> logger, IConfiguration config)
         {
             _logger = logger;
-            _containerName = config["Storage:CacheContainer"] ?? "routing-cache";
+            _containerName = config["Storage__CacheContainer"] ?? "routing-cache";
             
-            var blobServiceUrl = config["Storage:BlobServiceUrl"];
+            var blobServiceUrl = config["Storage__BlobServiceUrl"];
             if (string.IsNullOrEmpty(blobServiceUrl))
             {
-                throw new InvalidOperationException("Storage:BlobServiceUrl configuration is required");
+                throw new InvalidOperationException("Storage__BlobServiceUrl configuration is required");
             }
 
             // Use DefaultAzureCredential for managed identity authentication

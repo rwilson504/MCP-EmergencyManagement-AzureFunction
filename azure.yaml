@@ -1,0 +1,10 @@
+name: remote-mcp-functions-dotnet
+metadata:
+  template: remote-mcp-functions-dotnet@1.0.1
+services:
+  api:
+    project: ./src/
+    language: dotnet
+    host: function
+    resourceGroup: doem-rg-raw-dev
+    region: eastus
