@@ -277,6 +277,133 @@ You can run the `azd up` command as many times as you need to both provision you
 >[!NOTE]
 >Deployed code files are always overwritten by the latest deployment package.
 
+## Debugging and Logging
+
+This MCP server includes comprehensive logging to help diagnose issues in both local development and production environments. The logging system provides detailed information about request processing, external service calls, and error conditions.
+
+### Enhanced Logging Features
+
+- **Request Correlation**: Each request gets a unique request ID that traces through all services
+- **Performance Monitoring**: Timing information for all major operations
+- **Detailed Error Context**: Comprehensive error messages with categorization (HTTP errors, timeouts, JSON parsing, etc.)
+- **Security-Aware Logging**: Sensitive information like API keys are excluded from logs
+- **Service Dependency Tracking**: Detailed logging for Azure Maps API, ArcGIS services, and Azure Storage operations
+
+### Log Levels and Configuration
+
+The application uses structured logging with different levels:
+
+- **Debug**: Detailed execution flow, parameter values, and step-by-step processing
+- **Information**: Key operations, successful completions, and performance metrics
+- **Warning**: Non-critical issues, fallbacks, and truncated data
+- **Error**: Exceptions, service failures, and critical issues
+
+#### Local Development Logging
+
+For local debugging, copy `local.settings.json.default` to `local.settings.json` and configure the log levels:
+
+```json
+{
+  "Host": {
+    "logging": {
+      "logLevel": {
+        "default": "Information",
+        "EmergencyManagementMCP": "Debug",
+        "Microsoft.Azure.Functions.Worker": "Information",
+        "Azure.Storage": "Information"
+      },
+      "console": {
+        "isEnabled": true,
+        "includeScopes": true
+      }
+    }
+  }
+}
+```
+
+#### Production Logging
+
+Production logging is configured in `host.json` with Application Insights integration:
+
+```json
+{
+  "logging": {
+    "logLevel": {
+      "default": "Information",
+      "EmergencyManagementMCP": "Debug"
+    },
+    "applicationInsights": {
+      "enableDependencyTracking": true,
+      "enablePerformanceCountersCollection": true
+    }
+  }
+}
+```
+
+### Common Debugging Scenarios
+
+#### Route Calculation Issues
+
+Look for these log messages when debugging routing problems:
+
+```
+[Information] Starting fire-aware routing request: origin=(lat,lon), destination=(lat,lon), traceId=abc123
+[Debug] Step 1: Computing bounding box, traceId=abc123
+[Debug] Step 3: Loading fire perimeter data, traceId=abc123
+[Debug] Step 7: Calculating route with X avoid areas, traceId=abc123
+```
+
+#### Azure Maps API Issues
+
+Monitor for these error patterns:
+
+```
+[Error] Azure Maps API returned error 401: Invalid subscription key, requestId=def456
+[Warning] Truncated avoid areas from 15 to 10 due to Azure Maps limit, requestId=def456
+```
+
+#### Storage/Cache Issues
+
+Watch for storage-related errors:
+
+```
+[Error] Azure storage error in cache operation: key=fire-perimeters-123, statusCode=403, requestId=ghi789
+[Warning] Falling back to refresher due to cache error, requestId=ghi789
+```
+
+### Monitoring in Production
+
+1. **Application Insights**: View detailed telemetry, dependency tracking, and performance metrics
+2. **Log Analytics**: Query structured logs for troubleshooting specific issues
+3. **Function App Logs**: Stream real-time logs during development and testing
+
+#### Sample Log Analytics Queries
+
+Find all errors for a specific operation:
+```kusto
+traces
+| where severityLevel >= 3
+| where message contains "fire-aware routing"
+| order by timestamp desc
+```
+
+Track performance of route calculations:
+```kusto
+traces
+| where message contains "Route calculated successfully"
+| extend duration = extract(@"elapsed=(\d+)ms", 1, message)
+| summarize avg(toint(duration)) by bin(timestamp, 1h)
+```
+
+### Troubleshooting Common Issues
+
+1. **Missing Configuration**: Check `local.settings.json` for required Azure Maps keys and storage URLs
+2. **Authentication Failures**: Verify managed identity permissions for storage and external APIs
+3. **Network Timeouts**: Monitor network latency to external services (ArcGIS, Azure Maps)
+4. **Cache Performance**: Review cache hit/miss ratios and storage latency
+
+For additional debugging, enable Debug log level for the `EmergencyManagementMCP` namespace to see detailed request processing steps.
+
 ## Clean up resources
 
 When you're done working with your function app and related resources, you can use this command to delete the function app and its related resources from Azure and avoid incurring any further costs:
