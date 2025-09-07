@@ -22,6 +22,17 @@
       }
     }
   },
-  "securityDefinitions": {},
-  "security": []
+  "securityDefinitions": {
+    "functionsKey": {
+      "type": "apiKey",
+      "name": "x-functions-key",
+      "in": "header",
+      "description": "MCP Extension System Key"
+    }
+  },
+  "security": [
+    {
+      "functionsKey": []
+    }
+  ]
 }

@@ -66,7 +66,7 @@ namespace EmergencyManagementMCP.Services
 
                 var queryParams = new List<string>
                 {
-                    "api-version=2023-06-01",
+                    "api-version=1.0",
                     $"query={HttpUtility.UrlEncode(address)}",
                     "limit=1",
                     "countrySet=US" // Focus on US addresses for emergency management
