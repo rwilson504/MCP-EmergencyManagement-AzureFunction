@@ -14,20 +14,21 @@ namespace EmergencyManagementMCP.Services
         private readonly ILogger<RouterClient> _logger;
         private readonly TokenCredential _credential;
         private readonly string _routeBase;
-        private readonly string _clientId; // Store client ID
+        private readonly string? _mapsClientId; // Azure Maps account client ID for x-ms-client-id header
 
         public RouterClient(HttpClient httpClient, ILogger<RouterClient> logger, IConfiguration config)
         {
             _httpClient = httpClient;
             _logger = logger;
             _routeBase = config["Maps:RouteBase"] ?? "https://atlas.microsoft.com";
-            _clientId = config["AzureWebJobsStorage:clientId"];
+            _mapsClientId = config["Maps:ClientId"];
             
             // Use ManagedIdentityCredential with specific client ID for Azure Functions
-            if (!string.IsNullOrEmpty(_clientId))
+            var managedIdentityClientId = config["AzureWebJobsStorage:clientId"];
+            if (!string.IsNullOrEmpty(managedIdentityClientId))
             {
-                _logger.LogDebug("Using ManagedIdentityCredential with client ID: {ClientId}", _clientId);
-                _credential = new ManagedIdentityCredential(_clientId);
+                _logger.LogDebug("Using ManagedIdentityCredential with client ID: {ClientId}", managedIdentityClientId);
+                _credential = new ManagedIdentityCredential(managedIdentityClientId);
             }
             else
             {
@@ -100,11 +101,11 @@ namespace EmergencyManagementMCP.Services
                 // Create HTTP request with Authorization header
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenResult.Token);
-                // Add x-ms-client-id header if clientId is present
-                if (!string.IsNullOrEmpty(_clientId))
+                // Add x-ms-client-id header if Azure Maps clientId is present
+                if (!string.IsNullOrEmpty(_mapsClientId))
                 {
-                    request.Headers.Add("x-ms-client-id", _clientId);
-                    _logger.LogDebug("Set x-ms-client-id header: {ClientId}", _clientId);
+                    request.Headers.Add("x-ms-client-id", _mapsClientId);
+                    _logger.LogDebug("Set x-ms-client-id header: {ClientId}", _mapsClientId);
                 }
                 
                 var httpStopwatch = System.Diagnostics.Stopwatch.StartNew();
