@@ -47,7 +47,8 @@ namespace EmergencyManagementMCP.Services
                     ["spatialRel"] = "esriSpatialRelIntersects",
                     ["outFields"] = "*",
                     ["returnGeometry"] = "true",
-                    ["f"] = "geojson"
+                    ["f"] = "geojson",
+                    ["inSR"] = "4326"  // Uses the WGS 84 coordinate system (longitude/latitude)
                 };
                 
                 // Build query string with proper URL encoding
