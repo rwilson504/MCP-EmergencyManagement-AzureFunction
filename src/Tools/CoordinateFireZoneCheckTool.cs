@@ -6,64 +6,61 @@ using Microsoft.Extensions.Logging;
 
 namespace EmergencyManagementMCP.Tools
 {
-    public class AddressFireZoneCheckTool
+    public class CoordinateFireZoneCheckTool
     {
-        private readonly IGeocodingClient _geocodingClient;
         private readonly IGeoServiceClient _geoServiceClient;
         private readonly IGeoJsonCache _geoJsonCache;
         private readonly IGeometryUtils _geometryUtils;
-        private readonly ILogger<AddressFireZoneCheckTool> _logger;
+        private readonly ILogger<CoordinateFireZoneCheckTool> _logger;
 
-        public AddressFireZoneCheckTool(
-            IGeocodingClient geocodingClient,
+        public CoordinateFireZoneCheckTool(
             IGeoServiceClient geoServiceClient,
             IGeoJsonCache geoJsonCache,
             IGeometryUtils geometryUtils,
-            ILogger<AddressFireZoneCheckTool> logger)
+            ILogger<CoordinateFireZoneCheckTool> logger)
         {
-            _geocodingClient = geocodingClient;
             _geoServiceClient = geoServiceClient;
             _geoJsonCache = geoJsonCache;
             _geometryUtils = geometryUtils;
             _logger = logger;
         }
 
-        [Function(nameof(AddressFireZoneCheckTool))]
+        [Function(nameof(CoordinateFireZoneCheckTool))]
         public async Task<object> Run(
             [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
-            [McpToolProperty(AddressFireZoneCheckToolPropertyStrings.AddressName, AddressFireZoneCheckToolPropertyStrings.AddressType, AddressFireZoneCheckToolPropertyStrings.AddressDescription, Required = true)] string address
+            [McpToolProperty(CoordinateFireZoneCheckToolPropertyStrings.LatName, CoordinateFireZoneCheckToolPropertyStrings.LatType, CoordinateFireZoneCheckToolPropertyStrings.LatDescription, Required = true)] double lat,
+            [McpToolProperty(CoordinateFireZoneCheckToolPropertyStrings.LonName, CoordinateFireZoneCheckToolPropertyStrings.LonType, CoordinateFireZoneCheckToolPropertyStrings.LonDescription, Required = true)] double lon
         )
         {
             var traceId = Guid.NewGuid().ToString("N")[..8];
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-            _logger.LogInformation("Starting address fire zone check: address=\"{Address}\", traceId={TraceId}",
-                address, traceId);
+            _logger.LogInformation("Starting coordinate fire zone check: coordinates=({Lat},{Lon}), traceId={TraceId}",
+                lat, lon, traceId);
 
             // Validate input parameters
-            if (string.IsNullOrWhiteSpace(address))
+            if (!IsValidCoordinate(lat, lon))
             {
-                _logger.LogError("Address cannot be null or empty, traceId={TraceId}", traceId);
-                return CreateErrorResponse("Address cannot be null or empty", traceId);
+                _logger.LogError("Invalid coordinates: lat={Lat}, lon={Lon}, traceId={TraceId}", lat, lon, traceId);
+                return CreateErrorResponse("Invalid coordinates", lat, lon, traceId);
             }
 
             try
             {
-                // Step 1: Geocode the address
-                _logger.LogDebug("Step 1: Geocoding address, traceId={TraceId}", traceId);
+                // Step 1: Create coordinate object
+                _logger.LogDebug("Step 1: Creating coordinate object, traceId={TraceId}", traceId);
                 var stepStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 
-                var geocodingResult = await _geocodingClient.GeocodeAddressAsync(address);
+                var pointCoord = new Coordinate { Lat = lat, Lon = lon };
                 
                 stepStopwatch.Stop();
-                _logger.LogDebug("Step 1 completed in {ElapsedMs}ms: geocoded to ({Lat},{Lon}), traceId={TraceId}", 
-                    stepStopwatch.ElapsedMilliseconds, geocodingResult.Coordinates.Lat, geocodingResult.Coordinates.Lon, traceId);
+                _logger.LogDebug("Step 1 completed in {ElapsedMs}ms: coordinate object created, traceId={TraceId}", 
+                    stepStopwatch.ElapsedMilliseconds, traceId);
 
                 // Step 2: Create a small bounding box around the point for fire data retrieval
                 _logger.LogDebug("Step 2: Computing bounding box around point, traceId={TraceId}", traceId);
                 stepStopwatch.Restart();
                 
-                var pointCoord = geocodingResult.Coordinates;
                 var bbox = _geometryUtils.ComputeBBox(pointCoord, pointCoord, 5.0); // 5km buffer for data retrieval
                 
                 stepStopwatch.Stop();
@@ -98,41 +95,40 @@ namespace EmergencyManagementMCP.Tools
                     stepStopwatch.ElapsedMilliseconds, fireZoneInfo.IsInFireZone, traceId);
 
                 // Step 6: Build response
-                var response = new AddressFireZoneResponse
+                var response = new CoordinateFireZoneResponse
                 {
-                    Geocoding = geocodingResult,
+                    Coordinates = pointCoord,
                     FireZone = fireZoneInfo,
                     TraceId = traceId
                 };
 
                 stopwatch.Stop();
-                _logger.LogInformation("Address fire zone check completed: address=\"{Address}\", coordinates=({Lat},{Lon}), inFireZone={InFireZone}, incidentName=\"{IncidentName}\", totalTime={TotalMs}ms, traceId={TraceId}",
-                    address, pointCoord.Lat, pointCoord.Lon, fireZoneInfo.IsInFireZone, fireZoneInfo.IncidentName, stopwatch.ElapsedMilliseconds, traceId);
+                _logger.LogInformation("Coordinate fire zone check completed: coordinates=({Lat},{Lon}), inFireZone={InFireZone}, incidentName=\"{IncidentName}\", totalTime={TotalMs}ms, traceId={TraceId}",
+                    lat, lon, fireZoneInfo.IsInFireZone, fireZoneInfo.IncidentName, stopwatch.ElapsedMilliseconds, traceId);
 
                 return response;
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                _logger.LogError(ex, "Error checking address fire zone after {ElapsedMs}ms, traceId={TraceId}", 
+                _logger.LogError(ex, "Error checking coordinate fire zone after {ElapsedMs}ms, traceId={TraceId}", 
                     stopwatch.ElapsedMilliseconds, traceId);
                 
                 // Return error response with more context
-                return CreateErrorResponse($"Fire zone check failed: {ex.Message}", traceId);
+                return CreateErrorResponse($"Fire zone check failed: {ex.Message}", lat, lon, traceId);
             }
         }
 
-        private static object CreateErrorResponse(string errorMessage, string traceId)
+        private static bool IsValidCoordinate(double lat, double lon)
         {
-            return new AddressFireZoneResponse
+            return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+        }
+
+        private static object CreateErrorResponse(string errorMessage, double lat, double lon, string traceId)
+        {
+            return new CoordinateFireZoneResponse
             {
-                Geocoding = new GeocodingResult
-                {
-                    Address = "ERROR",
-                    Coordinates = new Coordinate { Lat = 0, Lon = 0 },
-                    FormattedAddress = $"ERROR: {errorMessage}",
-                    Confidence = "None"
-                },
+                Coordinates = new Coordinate { Lat = lat, Lon = lon },
                 FireZone = new FireZoneInfo
                 {
                     IsInFireZone = false,
@@ -142,7 +138,7 @@ namespace EmergencyManagementMCP.Tools
             };
         }
 
-        public const string ToolName = "emergency.addressFireZoneCheck";
-        public const string ToolDescription = "Check if a street address is located within an active fire zone and get coordinates (address-based).";
+        public const string ToolName = "emergency.coordinateFireZoneCheck";
+        public const string ToolDescription = "Check if latitude/longitude coordinates are located within an active fire zone.";
     }
 }

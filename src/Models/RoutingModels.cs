@@ -125,4 +125,34 @@ namespace EmergencyManagementMCP.Models
         [JsonPropertyName("traceId")]
         public string TraceId { get; set; } = string.Empty;
     }
+
+    public class CoordinateFireZoneResponse
+    {
+        [JsonPropertyName("coordinates")]
+        public Coordinate Coordinates { get; set; } = new();
+        
+        [JsonPropertyName("fireZone")]
+        public FireZoneInfo FireZone { get; set; } = new();
+        
+        [JsonPropertyName("traceId")]
+        public string TraceId { get; set; } = string.Empty;
+    }
+
+    public class AddressRouteResponse
+    {
+        [JsonPropertyName("originGeocoding")]
+        public GeocodingResult OriginGeocoding { get; set; } = new();
+        
+        [JsonPropertyName("destinationGeocoding")]
+        public GeocodingResult DestinationGeocoding { get; set; } = new();
+        
+        [JsonPropertyName("route")]
+        public RouteResult Route { get; set; } = new();
+        
+        [JsonPropertyName("appliedAvoids")]
+        public string[] AppliedAvoids { get; set; } = Array.Empty<string>();
+        
+        [JsonPropertyName("traceId")]
+        public string TraceId { get; set; } = string.Empty;
+    }
 }
