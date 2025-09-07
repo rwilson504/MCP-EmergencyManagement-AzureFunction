@@ -105,7 +105,7 @@ module api './app/api.bicep' = {
     identityId: apiUserAssignedIdentity.outputs.identityId
     identityClientId: apiUserAssignedIdentity.outputs.identityClientId
     appSettings: {
-      Storage__BlobServiceUrl: 'https://${storage.outputs.name}.blob.core.windows.net'
+      Storage__BlobServiceUrl: 'https://${storage.outputs.name}.blob.${environment().suffixes.storage}'
       Storage__CacheContainer: geoCacheContainerName
       Fires__ArcGisFeatureUrl: 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query'
       Maps__RouteBase: 'https://atlas.microsoft.com'
@@ -131,7 +131,7 @@ module storage './core/storage/storage-account.bicep' = {
   }
 }
 
-var StorageBlobDataOwner = 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
+var StorageBlobDataContributor = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe'
 var StorageQueueDataContributor = '974c5e8b-45b9-4653-ba55-5f855dd0fb88'
 
 // Allow access from api to blob storage using a managed identity
@@ -140,7 +140,7 @@ module blobRoleAssignmentApi 'app/storage-Access.bicep' = {
   scope: rg
   params: {
     storageAccountName: storage.outputs.name
-    roleDefinitionID: StorageBlobDataOwner
+    roleDefinitionID: StorageBlobDataContributor
     principalID: apiUserAssignedIdentity.outputs.identityPrincipalId
   }
 }
@@ -224,4 +224,35 @@ output AZURE_TENANT_ID string = tenant().tenantId
 output SERVICE_API_NAME string = api.outputs.SERVICE_API_NAME
 output AZURE_FUNCTION_NAME string = api.outputs.SERVICE_API_NAME
 output AZURE_MAPS_ACCOUNT_NAME string = maps.outputs.name
-output GEO_CACHE_CONTAINER_URI string = 'https://${storage.outputs.name}.blob.core.windows.net/${geoCacheContainerName}'
+output GEO_CACHE_CONTAINER_URI string = 'https://${storage.outputs.name}.blob.${environment().suffixes.storage}/${geoCacheContainerName}'
+
+// Diagnostic Settings for Security Monitoring
+module storageDiagnostics './core/monitor/diagnostics.bicep' = {
+  name: 'storageDiagnostics'
+  scope: rg
+  params: {
+    resourceName: storage.outputs.name
+    logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
+    diagnosticType: 'Storage'
+  }
+}
+
+module functionAppDiagnostics './core/monitor/diagnostics.bicep' = {
+  name: 'functionAppDiagnostics'
+  scope: rg
+  params: {
+    resourceName: api.outputs.SERVICE_API_NAME
+    logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
+    diagnosticType: 'FunctionApp'
+  }
+}
+
+module appInsightsDiagnostics './core/monitor/diagnostics.bicep' = {
+  name: 'appInsightsDiagnostics'
+  scope: rg
+  params: {
+    resourceName: monitoring.outputs.applicationInsightsName
+    logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
+    diagnosticType: 'ApplicationInsights'
+  }
+}
