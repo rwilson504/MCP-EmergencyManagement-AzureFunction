@@ -58,7 +58,25 @@ If you're looking for this sample in more languages check out the [Node.js/TypeS
   + [Visual Studio Code](https://code.visualstudio.com/)
   + [Azure Functions extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions)
 
-Below is the architecture diagram for the Remote MCP Server using Azure Functions:
+## Architecture Diagrams
+
+This section provides visual representations of how the MCP Emergency Management Azure Function works, specifically focusing on the fire-aware routing functionality.
+
+### Technical Architecture Diagram
+For developers and technical stakeholders, see the detailed [Technical Architecture Diagram](technical-architecture.md) which shows:
+- Azure resource connections and data flow
+- Authentication and security mechanisms  
+- External API integrations (ArcGIS, Azure Maps)
+- Service layer components and dependencies
+
+### Logical Flow Diagram  
+For business users and non-technical stakeholders, see the [Logical Flow Diagram](logical-flow.md) which explains:
+- Step-by-step user journey
+- How fire-aware routing works in simple terms
+- Why this architecture is powerful for emergency management
+- Real-world benefits and use cases
+
+Below is the original architecture diagram for the Remote MCP Server using Azure Functions:
 
 ![Architecture Diagram](architecture-diagram.png)
 
