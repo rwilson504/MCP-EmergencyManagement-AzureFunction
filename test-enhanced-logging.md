@@ -105,7 +105,7 @@ The enhanced logging includes timing information for all major operations:
 
 #### Configuration Issues
 ```
-[Error] Storage__BlobServiceUrl configuration is missing
+[Error] Storage:BlobServiceUrl configuration is missing
 [Error] GeoServiceClient initialization failed: Invalid URI
 [Error] Maps:Key configuration is required
 ```

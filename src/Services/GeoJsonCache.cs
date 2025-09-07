@@ -37,7 +37,7 @@ namespace EmergencyManagementMCP.Services
             try
             {
                 // Use ManagedIdentityCredential with specific client ID for Azure Functions
-                var clientId = config["AzureWebJobsStorage__clientId"];
+                var clientId = config["AzureWebJobsStorage:clientId"];
                 Azure.Core.TokenCredential credential;
                 
                 if (!string.IsNullOrEmpty(clientId))
