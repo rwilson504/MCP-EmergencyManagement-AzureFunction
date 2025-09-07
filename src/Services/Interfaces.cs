@@ -17,10 +17,16 @@ namespace EmergencyManagementMCP.Services
     {
         BoundingBox ComputeBBox(Coordinate origin, Coordinate destination, double bufferKm);
         List<AvoidRectangle> BuildAvoidRectanglesFromGeoJson(string geoJson, double bufferKm, int maxRects = 10);
+        FireZoneInfo CheckPointInFireZones(string geoJson, Coordinate point);
     }
 
     public interface IRouterClient
     {
         Task<RouteResult> GetRouteAsync(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas, DateTime? departAt = null);
+    }
+
+    public interface IGeocodingClient
+    {
+        Task<GeocodingResult> GeocodeAddressAsync(string address);
     }
 }

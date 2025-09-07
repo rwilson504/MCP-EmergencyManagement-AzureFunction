@@ -141,6 +141,9 @@ Note by default this will use the webhooks route: `/runtime/webhooks/mcp/sse`.  
 ### Fire-Aware Routing
 - **routing.fireAwareShortest** - Compute the shortest route while avoiding wildfire perimeters and closures
 
+### Address Fire Zone Check
+- **emergency.addressFireZoneCheck** - Check if a street address is located within an active fire zone and get coordinates
+
 #### Fire-Aware Routing Tool
 
 The `routing.fireAwareShortest` tool provides intelligent routing that avoids active wildfire perimeters and road closures, ensuring safer travel routes during emergency conditions.
@@ -199,6 +202,53 @@ The `routing.fireAwareShortest` tool provides intelligent routing that avoids ac
   "destination": { "lat": 34.1625, "lon": -118.1331 },
   "bufferKm": 3.0,
   "useClosures": true
+}
+```
+
+#### Address Fire Zone Check Tool
+
+The `emergency.addressFireZoneCheck` tool allows you to check if a street address is located within an active wildfire zone, providing both geocoding results and fire zone information.
+
+**Parameters:**
+```json
+{
+  "address": "123 Wildfire Road, Paradise, CA 95969"
+}
+```
+
+**Response:**
+```json
+{
+  "geocoding": {
+    "address": "123 Wildfire Road, Paradise, CA 95969",
+    "coordinates": { "lat": 39.7596, "lon": -121.6219 },
+    "confidence": "High",
+    "formattedAddress": "123 Wildfire Road, Paradise, CA 95969, United States"
+  },
+  "fireZone": {
+    "isInFireZone": true,
+    "fireZoneName": "Camp Fire",
+    "incidentName": "Camp Fire Incident",
+    "containmentPercent": 85.0,
+    "acresBurned": 153336.0,
+    "lastUpdate": "2024-01-15T14:30:00Z"
+  },
+  "traceId": "abc12345"
+}
+```
+
+**Key Features:**
+- Geocodes addresses using Azure Maps Search API with high accuracy
+- Returns formatted address and coordinate information
+- Checks coordinates against real-time wildfire perimeter data from ArcGIS
+- Provides detailed fire zone information including incident name, containment, and size
+- Caches fire data for 10 minutes to optimize performance
+- Supports any US address format
+
+**Sample Test Payload:**
+```json
+{
+  "address": "1 Hacker Way, Menlo Park, CA"
 }
 ```
 

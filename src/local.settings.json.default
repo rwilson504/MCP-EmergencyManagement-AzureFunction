@@ -14,6 +14,7 @@
     
     "_comment_maps": "Replace with your Azure Maps subscription key",
     "Maps:RouteBase": "https://atlas.microsoft.com",
+    "Maps:SearchBase": "https://atlas.microsoft.com",
     "Maps:Key": "[YOUR_AZURE_MAPS_PRIMARY_KEY]",
     
     "_comment_appinsights": "Optional: Add Application Insights connection string for local telemetry",
