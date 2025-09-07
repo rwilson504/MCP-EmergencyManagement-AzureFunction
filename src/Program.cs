@@ -21,8 +21,14 @@ builder.Services.Configure<LoggerFilterOptions>(options =>
 
 // MCP Tool: Fire-Aware Routing
 var routingFireAwareShortest = builder.ConfigureMcpTool(RoutingFireAwareShortestTool.ToolName);
-foreach (var prop in RoutingFireAwareShortestTool.Properties)
-    routingFireAwareShortest.WithProperty(prop.Name, prop.Type, prop.Description);
+routingFireAwareShortest
+    .WithProperty(RoutingFireAwareShortestToolPropertyStrings.OriginLatName, RoutingFireAwareShortestToolPropertyStrings.OriginLatType, RoutingFireAwareShortestToolPropertyStrings.OriginLatDescription)
+    .WithProperty(RoutingFireAwareShortestToolPropertyStrings.OriginLonName, RoutingFireAwareShortestToolPropertyStrings.OriginLonType, RoutingFireAwareShortestToolPropertyStrings.OriginLonDescription)
+    .WithProperty(RoutingFireAwareShortestToolPropertyStrings.DestinationLatName, RoutingFireAwareShortestToolPropertyStrings.DestinationLatType, RoutingFireAwareShortestToolPropertyStrings.DestinationLatDescription)
+    .WithProperty(RoutingFireAwareShortestToolPropertyStrings.DestinationLonName, RoutingFireAwareShortestToolPropertyStrings.DestinationLonType, RoutingFireAwareShortestToolPropertyStrings.DestinationLonDescription)
+    .WithProperty(RoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersName, RoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersType, RoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersDescription)
+    .WithProperty(RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcName, RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcType, RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcDescription)
+    .WithProperty(RoutingFireAwareShortestToolPropertyStrings.ProfileName, RoutingFireAwareShortestToolPropertyStrings.ProfileType, RoutingFireAwareShortestToolPropertyStrings.ProfileDescription);
 
 // Register Fire-Aware Routing Services
 builder.Services.AddHttpClient<IGeoServiceClient, GeoServiceClient>();

@@ -15,20 +15,28 @@ namespace EmergencyManagementMCP.Services
         public GeoJsonCache(ILogger<GeoJsonCache> logger, IConfiguration config)
         {
             _logger = logger;
-            _containerName = config["Storage__CacheContainer"] ?? "routing-cache";
-            
-            var blobServiceUrl = config["Storage__BlobServiceUrl"];
+            _containerName = config["Storage:CacheContainer"] ?? "routing-cache";
+
+            // Log all config values for diagnostics
+            // foreach (var kvp in config.AsEnumerable())
+            // {
+            //     if (!string.IsNullOrEmpty(kvp.Value))
+            //     {
+            //         _logger.LogInformation("Config: {Key} = {Value}", kvp.Key, kvp.Value);
+            //     }
+            // }
+
+            var blobServiceUrl = config["Storage:BlobServiceUrl"];
             if (string.IsNullOrEmpty(blobServiceUrl))
             {
-                _logger.LogError("Storage__BlobServiceUrl configuration is missing");
-                throw new InvalidOperationException("Storage__BlobServiceUrl configuration is required");
+                _logger.LogError("Storage:BlobServiceUrl configuration is missing");
+                throw new InvalidOperationException("Storage:BlobServiceUrl configuration is required");
             }
 
             try
             {
                 // Use DefaultAzureCredential for managed identity authentication
                 _blobServiceClient = new BlobServiceClient(new Uri(blobServiceUrl), new DefaultAzureCredential());
-                
                 _logger.LogInformation("GeoJsonCache initialized successfully: container={ContainerName}, blobService={BlobServiceUrl}", 
                     _containerName, blobServiceUrl);
             }

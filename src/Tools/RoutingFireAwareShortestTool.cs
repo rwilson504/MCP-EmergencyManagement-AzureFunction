@@ -1,11 +1,8 @@
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using EmergencyManagementMCP.Models;
+using EmergencyManagementMCP.Services;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Extensions.Mcp;
 using Microsoft.Extensions.Logging;
-using EmergencyManagementMCP.Services;
-using EmergencyManagementMCP.Common;
-using EmergencyManagementMCP.Models;
 
 namespace EmergencyManagementMCP.Tools
 {
@@ -33,31 +30,38 @@ namespace EmergencyManagementMCP.Tools
 
         [Function(nameof(RoutingFireAwareShortestTool))]
         public async Task<object> Run(
-            [McpToolTrigger(ToolName, ToolDescription)] RoutingFireAwareShortestRequest request,
-            ToolInvocationContext context)
+            [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
+            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.OriginLatName, RoutingFireAwareShortestToolPropertyStrings.OriginLatType, RoutingFireAwareShortestToolPropertyStrings.OriginLatDescription, Required = true)] double originLat,
+            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.OriginLonName, RoutingFireAwareShortestToolPropertyStrings.OriginLonType, RoutingFireAwareShortestToolPropertyStrings.OriginLonDescription, Required = true)] double originLon,
+            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.DestinationLatName, RoutingFireAwareShortestToolPropertyStrings.DestinationLatType, RoutingFireAwareShortestToolPropertyStrings.DestinationLatDescription, Required = true)] double destinationLat,
+            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.DestinationLonName, RoutingFireAwareShortestToolPropertyStrings.DestinationLonType, RoutingFireAwareShortestToolPropertyStrings.DestinationLonDescription, Required = true)] double destinationLon,
+            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersName, RoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersType, RoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersDescription, Required = false)] double? avoidBufferMeters,
+            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcName, RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcType, RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcDescription, Required = false)] string? departAtIsoUtc,
+            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.ProfileName, RoutingFireAwareShortestToolPropertyStrings.ProfileType, RoutingFireAwareShortestToolPropertyStrings.ProfileDescription, Required = false)] string? profile
+        )
         {
             var traceId = Guid.NewGuid().ToString("N")[..8];
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             _logger.LogInformation("Starting fire-aware routing request: origin=({OriginLat},{OriginLon}), destination=({DestinationLat},{DestinationLon}), avoidBufferMeters={AvoidBufferMeters}, profile={Profile}, departAtIsoUtc={DepartAtIsoUtc}, traceId={TraceId}",
-                request.OriginLat, request.OriginLon, request.DestinationLat, request.DestinationLon, request.AvoidBufferMeters, request.Profile, request.DepartAtIsoUtc, traceId);
+                originLat, originLon, destinationLat, destinationLon, avoidBufferMeters, profile, departAtIsoUtc, traceId);
 
             // Validate input parameters
-            if (!IsValidCoordinate(request.OriginLat, request.OriginLon))
+            if (!IsValidCoordinate(originLat, originLon))
             {
                 _logger.LogError("Invalid origin coordinates: lat={Lat}, lon={Lon}, traceId={TraceId}", 
-                    request.OriginLat, request.OriginLon, traceId);
+                    originLat, originLon, traceId);
                 return CreateErrorResponse("Invalid origin coordinates", traceId);
             }
 
-            if (!IsValidCoordinate(request.DestinationLat, request.DestinationLon))
+            if (!IsValidCoordinate(destinationLat, destinationLon))
             {
                 _logger.LogError("Invalid destination coordinates: lat={Lat}, lon={Lon}, traceId={TraceId}", 
-                    request.DestinationLat, request.DestinationLon, traceId);
+                    destinationLat, destinationLon, traceId);
                 return CreateErrorResponse("Invalid destination coordinates", traceId);
             }
 
-            double bufferKm = (request.AvoidBufferMeters ?? 2000) / 1000.0;
+            double bufferKm = (avoidBufferMeters ?? 2000) / 1000.0;
             if (bufferKm < 0 || bufferKm > 100)
             {
                 _logger.LogError("Invalid buffer distance: {BufferKm}km, traceId={TraceId}", bufferKm, traceId);
@@ -65,24 +69,24 @@ namespace EmergencyManagementMCP.Tools
             }
 
             DateTime? departAt = null;
-            if (!string.IsNullOrEmpty(request.DepartAtIsoUtc))
+            if (!string.IsNullOrEmpty(departAtIsoUtc))
             {
-                if (DateTime.TryParse(request.DepartAtIsoUtc, out var parsedDt))
+                if (DateTime.TryParse(departAtIsoUtc, out var parsedDt))
                 {
                     departAt = parsedDt.ToUniversalTime();
                 }
                 else
                 {
                     _logger.LogError("Invalid DepartAtIsoUtc format: {DepartAtIsoUtc}, traceId={TraceId}", 
-                        request.DepartAtIsoUtc, traceId);
+                        departAtIsoUtc, traceId);
                     return CreateErrorResponse("Invalid DepartAtIsoUtc format", traceId);
                 }
             }
 
             try
             {
-                var origin = new Coordinate { Lat = request.OriginLat, Lon = request.OriginLon };
-                var destination = new Coordinate { Lat = request.DestinationLat, Lon = request.DestinationLon };
+                var origin = new Coordinate { Lat = originLat, Lon = originLon };
+                var destination = new Coordinate { Lat = destinationLat, Lon = destinationLon };
 
                 _logger.LogDebug("Step 1: Computing bounding box, traceId={TraceId}", traceId);
                 var stepStopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -135,7 +139,7 @@ namespace EmergencyManagementMCP.Tools
                     stepStopwatch.ElapsedMilliseconds, closuresToAdd.Count, closureRectangles.Count, traceId);
 
                 // 6. Profile (not used in routing logic here, but could be passed to router)
-                string profile = request.Profile ?? "driving";
+                string routingProfile = profile ?? "driving";
 
                 _logger.LogDebug("Step 7: Calculating route with {AvoidCount} avoid areas, traceId={TraceId}", 
                     avoidRectangles.Count, traceId);
@@ -195,27 +199,5 @@ namespace EmergencyManagementMCP.Tools
 
         public const string ToolName = "routing.fireAwareShortest";
         public const string ToolDescription = "Compute the shortest route while avoiding wildfire perimeters and closures.";
-
-        public static readonly IReadOnlyList<McpToolProperty> Properties = new List<McpToolProperty>
-        {
-            new McpToolProperty { Name = "OriginLat", Type = "number", Description = "Origin latitude.", Required = true },
-            new McpToolProperty { Name = "OriginLon", Type = "number", Description = "Origin longitude.", Required = true },
-            new McpToolProperty { Name = "DestinationLat", Type = "number", Description = "Destination latitude.", Required = true },
-            new McpToolProperty { Name = "DestinationLon", Type = "number", Description = "Destination longitude.", Required = true },
-            new McpToolProperty { Name = "AvoidBufferMeters", Type = "number", Description = "Buffer distance in meters around fire perimeters to avoid. Default is 2000.", Required = false },
-            new McpToolProperty { Name = "DepartAtIsoUtc", Type = "string", Description = "Optional departure time in ISO 8601 UTC format (e.g., 2023-08-01T15:30:00Z).", Required = false },
-            new McpToolProperty { Name = "Profile", Type = "string", Description = "Routing profile (e.g., driving, walking). Default is driving.", Required = false }
-        };
-    }
-
-    public sealed class RoutingFireAwareShortestRequest
-    {
-        public required double OriginLat { get; set; }
-        public required double OriginLon { get; set; }
-        public required double DestinationLat { get; set; }
-        public required double DestinationLon { get; set; }
-        public double? AvoidBufferMeters { get; set; }
-        public string? DepartAtIsoUtc { get; set; }
-        public string? Profile { get; set; } = "driving";
     }
 }

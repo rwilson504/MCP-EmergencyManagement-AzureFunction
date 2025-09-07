@@ -41,6 +41,7 @@
     <Using Include="System.Threading.ExecutionContext" Alias="ExecutionContext" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Common\" />
     <Folder Include="Middleware\" />
     <Folder Include="OpenAPI\" />
   </ItemGroup>
