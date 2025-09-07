@@ -42,7 +42,8 @@ namespace EmergencyManagementMCP.Services
                     $"subscription-key={_mapsKey}",
                     $"query={origin.Lat},{origin.Lon}:{destination.Lat},{destination.Lon}",
                     "routeType=fastest",
-                    "travelMode=car"
+                    "travelMode=car",
+                    "instructionsType=text"  // Request text-based driving instructions
                 };
 
                 // Add avoid areas if any (limit to 10 as per Azure Maps)
@@ -184,11 +185,57 @@ namespace EmergencyManagementMCP.Services
 
                 var polylineGeoJson = JsonSerializer.Serialize(geoJsonLineString);
 
+                // Extract driving directions/guidance instructions
+                var drivingDirections = new List<DrivingInstruction>();
+                
+                if (firstRoute.TryGetProperty("guidance", out var guidance) && 
+                    guidance.TryGetProperty("instructions", out var instructions))
+                {
+                    foreach (var instruction in instructions.EnumerateArray())
+                    {
+                        var direction = new DrivingInstruction();
+                        
+                        if (instruction.TryGetProperty("routeOffsetInMeters", out var offsetElement))
+                        {
+                            direction.RouteOffsetInMeters = offsetElement.GetInt32();
+                        }
+                        
+                        if (instruction.TryGetProperty("travelTimeInSeconds", out var timeElement))
+                        {
+                            direction.TravelTimeInSeconds = timeElement.GetInt32();
+                        }
+                        
+                        if (instruction.TryGetProperty("message", out var messageElement))
+                        {
+                            direction.Message = messageElement.GetString() ?? string.Empty;
+                        }
+                        
+                        if (instruction.TryGetProperty("point", out var pointElement))
+                        {
+                            direction.Point = new Coordinate
+                            {
+                                Lat = pointElement.GetProperty("latitude").GetDouble(),
+                                Lon = pointElement.GetProperty("longitude").GetDouble()
+                            };
+                        }
+                        
+                        drivingDirections.Add(direction);
+                    }
+                    
+                    _logger.LogDebug("Extracted {DirectionCount} driving directions, requestId={RequestId}", 
+                        drivingDirections.Count, requestId);
+                }
+                else
+                {
+                    _logger.LogDebug("No driving directions found in Azure Maps response, requestId={RequestId}", requestId);
+                }
+
                 return new RouteResult
                 {
                     DistanceMeters = distanceMeters,
                     TravelTimeSeconds = travelTimeSeconds,
-                    PolylineGeoJson = polylineGeoJson
+                    PolylineGeoJson = polylineGeoJson,
+                    DrivingDirections = drivingDirections.ToArray()
                 };
             }
             catch (JsonException jsonEx)
