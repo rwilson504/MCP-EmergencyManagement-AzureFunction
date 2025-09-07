@@ -109,7 +109,7 @@ module api './app/api.bicep' = {
       Storage__CacheContainer: geoCacheContainerName
       Fires__ArcGisFeatureUrl: 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query'
       Maps__RouteBase: 'https://atlas.microsoft.com'
-      Maps__Key: maps.outputs.primaryKey
+      Maps__SearchBase: 'https://atlas.microsoft.com'
     }
     virtualNetworkSubnetId: !vnetEnabled ? '' : serviceVirtualNetwork.outputs.appSubnetID
   }
@@ -193,6 +193,7 @@ module monitoring './core/monitor/monitoring.bicep' = {
 }
 
 var monitoringRoleDefinitionId = '3913510d-42f4-4e42-8a64-420c390055eb' // Monitoring Metrics Publisher role ID
+var mapsDataReaderRoleDefinitionId = '423170ca-a8f6-4b0f-8487-9e4eb8f49bfa' // Azure Maps Data Reader role ID
 
 // Allow access from api to application insights using a managed identity
 module appInsightsRoleAssignmentApi './core/monitor/appinsights-access.bicep' = {
@@ -201,6 +202,17 @@ module appInsightsRoleAssignmentApi './core/monitor/appinsights-access.bicep' = 
   params: {
     appInsightsName: monitoring.outputs.applicationInsightsName
     roleDefinitionID: monitoringRoleDefinitionId
+    principalID: apiUserAssignedIdentity.outputs.identityPrincipalId
+  }
+}
+
+// Allow access from api to Azure Maps using a managed identity
+module mapsRoleAssignmentApi './core/security/maps-access.bicep' = {
+  name: 'mapsRoleAssignmentapi'
+  scope: rg
+  params: {
+    mapsAccountName: maps.outputs.name
+    roleDefinitionID: mapsDataReaderRoleDefinitionId
     principalID: apiUserAssignedIdentity.outputs.identityPrincipalId
   }
 }
