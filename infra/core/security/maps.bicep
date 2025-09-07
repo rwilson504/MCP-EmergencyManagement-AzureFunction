@@ -10,12 +10,11 @@ resource maps 'Microsoft.Maps/accounts@2023-06-01' = {
     name: sku
   }
   properties: {
-    // Allow key usage for demo purposes
-    disableLocalAuth: false
+    // Disable local authentication to enforce Azure AD authentication only
+    disableLocalAuth: true
   }
   tags: tags
 }
 
 output id string = maps.id
 output name string = maps.name
-output primaryKey string = listKeys(maps.id, '2023-06-01').primaryKey

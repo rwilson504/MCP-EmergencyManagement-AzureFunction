@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Web;
+using Azure.Core;
+using Azure.Identity;
 
 namespace EmergencyManagementMCP.Services
 {
@@ -10,18 +12,31 @@ namespace EmergencyManagementMCP.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<GeocodingClient> _logger;
-        private readonly string _mapsKey;
+        private readonly TokenCredential _credential;
         private readonly string _searchBase;
 
         public GeocodingClient(HttpClient httpClient, ILogger<GeocodingClient> logger, IConfiguration config)
         {
             _httpClient = httpClient;
             _logger = logger;
-            _mapsKey = config["Maps:Key"] ?? throw new InvalidOperationException("Maps:Key configuration is required");
             _searchBase = config["Maps:SearchBase"] ?? "https://atlas.microsoft.com";
             
-            _logger.LogInformation("GeocodingClient initialized with Maps API base: {SearchBase}", _searchBase);
-            _logger.LogDebug("Maps API key configured for geocoding: {HasKey}", !string.IsNullOrEmpty(_mapsKey));
+            // Use ManagedIdentityCredential with specific client ID for Azure Functions
+            var clientId = config["AzureWebJobsStorage:clientId"];
+            
+            if (!string.IsNullOrEmpty(clientId))
+            {
+                _logger.LogDebug("Using ManagedIdentityCredential with client ID: {ClientId}", clientId);
+                _credential = new ManagedIdentityCredential(clientId);
+            }
+            else
+            {
+                _logger.LogDebug("Using DefaultAzureCredential (no client ID specified)");
+                _credential = new DefaultAzureCredential();
+            }
+            
+            _logger.LogInformation("GeocodingClient initialized with Maps API base: {SearchBase}, credential: {CredentialType}", 
+                _searchBase, _credential.GetType().Name);
         }
 
         public async Task<GeocodingResult> GeocodeAddressAsync(string address)
@@ -40,10 +55,16 @@ namespace EmergencyManagementMCP.Services
 
             try
             {
+                // Get access token for Azure Maps
+                var tokenContext = new TokenRequestContext(new[] { "https://atlas.microsoft.com/.default" });
+                var tokenResult = await _credential.GetTokenAsync(tokenContext, CancellationToken.None);
+                
+                _logger.LogDebug("Obtained access token for Azure Maps, expires at: {ExpiresOn}, requestId={RequestId}", 
+                    tokenResult.ExpiresOn, requestId);
+
                 var queryParams = new List<string>
                 {
                     "api-version=2023-06-01",
-                    $"subscription-key={_mapsKey}",
                     $"query={HttpUtility.UrlEncode(address)}",
                     "limit=1",
                     "countrySet=US" // Focus on US addresses for emergency management
@@ -51,10 +72,14 @@ namespace EmergencyManagementMCP.Services
 
                 var requestUrl = $"{_searchBase}/search/address/json?{string.Join("&", queryParams)}";
                 
-                _logger.LogDebug("Making Azure Maps Geocoding API request, requestId={RequestId}", requestId);
+                _logger.LogDebug("Making Azure Maps Geocoding API request with managed identity authentication, requestId={RequestId}", requestId);
+
+                // Create HTTP request with Authorization header
+                using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenResult.Token);
 
                 var httpStopwatch = System.Diagnostics.Stopwatch.StartNew();
-                var response = await _httpClient.GetAsync(requestUrl);
+                var response = await _httpClient.SendAsync(request);
                 httpStopwatch.Stop();
                 
                 _logger.LogDebug("Azure Maps Geocoding API response received: status={StatusCode}, elapsed={ElapsedMs}ms, requestId={RequestId}",

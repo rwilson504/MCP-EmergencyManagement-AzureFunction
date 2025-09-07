@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Web;
+using Azure.Core;
+using Azure.Identity;
 
 namespace EmergencyManagementMCP.Services
 {
@@ -10,20 +12,31 @@ namespace EmergencyManagementMCP.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<RouterClient> _logger;
-        private readonly string _mapsKey;
+        private readonly TokenCredential _credential;
         private readonly string _routeBase;
 
         public RouterClient(HttpClient httpClient, ILogger<RouterClient> logger, IConfiguration config)
         {
             _httpClient = httpClient;
             _logger = logger;
-            _mapsKey = config["Maps:Key"] ?? throw new InvalidOperationException("Maps:Key configuration is required");
             _routeBase = config["Maps:RouteBase"] ?? "https://atlas.microsoft.com";
             
-            _logger.LogInformation("RouterClient initialized with Maps API base: {RouteBase}", _routeBase);
+            // Use ManagedIdentityCredential with specific client ID for Azure Functions
+            var clientId = config["AzureWebJobsStorage:clientId"];
             
-            // Don't log the actual API key for security, just indicate if it's present
-            _logger.LogDebug("Maps API key configured: {HasKey}", !string.IsNullOrEmpty(_mapsKey));
+            if (!string.IsNullOrEmpty(clientId))
+            {
+                _logger.LogDebug("Using ManagedIdentityCredential with client ID: {ClientId}", clientId);
+                _credential = new ManagedIdentityCredential(clientId);
+            }
+            else
+            {
+                _logger.LogDebug("Using DefaultAzureCredential (no client ID specified)");
+                _credential = new DefaultAzureCredential();
+            }
+            
+            _logger.LogInformation("RouterClient initialized with Maps API base: {RouteBase}, credential: {CredentialType}", 
+                _routeBase, _credential.GetType().Name);
         }
 
         public async Task<RouteResult> GetRouteAsync(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas, DateTime? departAt = null)
@@ -36,10 +49,16 @@ namespace EmergencyManagementMCP.Services
 
             try
             {
+                // Get access token for Azure Maps
+                var tokenContext = new TokenRequestContext(new[] { "https://atlas.microsoft.com/.default" });
+                var tokenResult = await _credential.GetTokenAsync(tokenContext, CancellationToken.None);
+                
+                _logger.LogDebug("Obtained access token for Azure Maps, expires at: {ExpiresOn}, requestId={RequestId}", 
+                    tokenResult.ExpiresOn, requestId);
+
                 var queryParams = new List<string>
                 {
                     $"api-version=1.0",
-                    $"subscription-key={_mapsKey}",
                     $"query={origin.Lat},{origin.Lon}:{destination.Lat},{destination.Lon}",
                     "routeType=fastest",
                     "travelMode=car",
@@ -73,11 +92,14 @@ namespace EmergencyManagementMCP.Services
 
                 var requestUrl = $"{_routeBase}/route/directions/json?{string.Join("&", queryParams)}";
                 
-                _logger.LogDebug("Making Azure Maps API request, requestId={RequestId}", requestId);
-                // Don't log the full URL as it contains the API key
+                _logger.LogDebug("Making Azure Maps API request with managed identity authentication, requestId={RequestId}", requestId);
+                
+                // Create HTTP request with Authorization header
+                using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenResult.Token);
                 
                 var httpStopwatch = System.Diagnostics.Stopwatch.StartNew();
-                var response = await _httpClient.GetAsync(requestUrl);
+                var response = await _httpClient.SendAsync(request);
                 httpStopwatch.Stop();
                 
                 _logger.LogDebug("Azure Maps API response received: status={StatusCode}, elapsed={ElapsedMs}ms, requestId={RequestId}",

@@ -35,11 +35,10 @@ namespace EmergencyManagementMCP.Tests
             Console.WriteLine($"  Destination: {destination.Lat}, {destination.Lon}");
             Console.WriteLine($"  Avoid Areas: {avoidAreas.Count}");
             
-            // Simulate the URL construction logic from RouterClient
+            // Simulate the URL construction logic from RouterClient (using managed identity now)
             var queryParams = new List<string>
             {
-                "api-version=2025-01-01",  // Updated API version
-                "subscription-key=dummy_key_for_testing",
+                "api-version=1.0",  // API version used by RouterClient
                 $"query={origin.Lat},{origin.Lon}:{destination.Lat},{destination.Lon}",
                 "routeType=fastest",
                 "travelMode=car"
@@ -57,25 +56,25 @@ namespace EmergencyManagementMCP.Tests
             var queryString = string.Join("&", queryParams);
             var fullUrl = $"https://atlas.microsoft.com/route/directions/json?{queryString}";
             
-            Console.WriteLine("\nGenerated URL (with dummy key):");
-            Console.WriteLine(fullUrl.Replace("dummy_key_for_testing", "***REDACTED***"));
+            Console.WriteLine("\nGenerated URL (with managed identity auth - no key in URL):");
+            Console.WriteLine(fullUrl);
             
             // Verify the fixes are applied
-            var hasCorrectApiVersion = queryString.Contains("api-version=2025-01-01");
+            var hasCorrectApiVersion = queryString.Contains("api-version=1.0");
             var hasAvoidAreas = queryString.Contains("avoidAreas=");
-            var doesNotHaveInvalidAvoid = !queryString.Contains("avoid=avoidAreas");
+            var doesNotHaveSubscriptionKey = !queryString.Contains("subscription-key=");
             var hasCorrectAvoidFormat = queryString.Contains("avoidAreas=34%2c-118.3%3a34.1%2c-118.2") ||
                                       queryString.Contains("avoidAreas=34,-118.3:34.1,-118.2");
             
             Console.WriteLine("\nValidations:");
-            Console.WriteLine($"✅ Uses API version 2025-01-01: {hasCorrectApiVersion}");
+            Console.WriteLine($"✅ Uses API version 1.0: {hasCorrectApiVersion}");
             Console.WriteLine($"✅ Has avoidAreas parameter: {hasAvoidAreas}");
-            Console.WriteLine($"✅ Does NOT have invalid 'avoid=avoidAreas': {doesNotHaveInvalidAvoid}");
+            Console.WriteLine($"✅ Uses managed identity (no subscription-key): {doesNotHaveSubscriptionKey}");
             Console.WriteLine($"✅ Has correct avoid area format: {hasCorrectAvoidFormat}");
             
-            if (hasCorrectApiVersion && hasAvoidAreas && doesNotHaveInvalidAvoid && hasCorrectAvoidFormat)
+            if (hasCorrectApiVersion && hasAvoidAreas && doesNotHaveSubscriptionKey && hasCorrectAvoidFormat)
             {
-                Console.WriteLine("\n🎉 All validations passed - Azure Maps API format is correct!");
+                Console.WriteLine("\n🎉 All validations passed - Azure Maps API format is correct with managed identity!");
             }
             else
             {
@@ -86,8 +85,7 @@ namespace EmergencyManagementMCP.Tests
             Console.WriteLine("\n--- Testing without avoid areas ---");
             var queryParamsNoAvoid = new List<string>
             {
-                "api-version=2025-01-01",
-                "subscription-key=dummy_key_for_testing",
+                "api-version=1.0",
                 $"query={origin.Lat},{origin.Lon}:{destination.Lat},{destination.Lon}",
                 "routeType=fastest",
                 "travelMode=car"
