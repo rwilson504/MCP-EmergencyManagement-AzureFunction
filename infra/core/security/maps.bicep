@@ -18,3 +18,4 @@ resource maps 'Microsoft.Maps/accounts@2023-06-01' = {
 
 output id string = maps.id
 output name string = maps.name
+output clientId string = maps.properties.uniqueId

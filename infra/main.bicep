@@ -110,6 +110,7 @@ module api './app/api.bicep' = {
       Fires__ArcGisFeatureUrl: 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query'
       Maps__RouteBase: 'https://atlas.microsoft.com'
       Maps__SearchBase: 'https://atlas.microsoft.com'
+      Maps__ClientId: maps.outputs.clientId
     }
     virtualNetworkSubnetId: !vnetEnabled ? '' : serviceVirtualNetwork.outputs.appSubnetID
   }
