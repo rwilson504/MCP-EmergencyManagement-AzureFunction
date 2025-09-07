@@ -39,7 +39,8 @@ namespace EmergencyManagementMCP.Tests
                 ["spatialRel"] = "esriSpatialRelIntersects",
                 ["outFields"] = "*",
                 ["returnGeometry"] = "true",
-                ["f"] = "geojson"
+                ["f"] = "geojson",
+                ["inSR"] = "4326"  // WGS 84 coordinate system (longitude/latitude)
             };
             
             var expectedQuery = string.Join("&", expectedParams.Select(kvp => 
@@ -70,6 +71,7 @@ namespace EmergencyManagementMCP.Tests
             Console.WriteLine($"  2. ✅ Updated service name: 'WFIGS_Wildland_Fire_Perimeters_ToDate' → 'WFIGS_Interagency_Perimeters_YearToDate'");
             Console.WriteLine($"  3. ✅ Improved query parameter construction with proper URL encoding");
             Console.WriteLine($"  4. ✅ Removed unused sinceDate parameter that might have caused confusion");
+            Console.WriteLine($"  5. ✅ Added inSR=4326 parameter to specify WGS 84 coordinate system");
             
             Console.WriteLine("\n✅ URL construction test completed successfully!");
         }
