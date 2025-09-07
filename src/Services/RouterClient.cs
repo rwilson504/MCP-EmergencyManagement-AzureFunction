@@ -38,7 +38,7 @@ namespace EmergencyManagementMCP.Services
             {
                 var queryParams = new List<string>
                 {
-                    $"api-version=1.0",
+                    $"api-version=2025-01-01",
                     $"subscription-key={_mapsKey}",
                     $"query={origin.Lat},{origin.Lon}:{destination.Lat},{destination.Lon}",
                     "routeType=fastest",
@@ -51,7 +51,7 @@ namespace EmergencyManagementMCP.Services
                     var areasToUse = avoidAreas.Take(10).ToList();
                     var avoidAreasStr = string.Join("|", areasToUse.Select(r => 
                         $"{r.MinLat},{r.MinLon}:{r.MaxLat},{r.MaxLon}"));
-                    queryParams.Add($"avoid=avoidAreas&avoidAreas={HttpUtility.UrlEncode(avoidAreasStr)}");
+                    queryParams.Add($"avoidAreas={HttpUtility.UrlEncode(avoidAreasStr)}");
                     
                     _logger.LogDebug("Added {ActualCount} avoid areas (of {TotalCount} requested), requestId={RequestId}", 
                         areasToUse.Count, avoidAreas.Count, requestId);
