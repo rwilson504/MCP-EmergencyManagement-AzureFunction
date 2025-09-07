@@ -36,6 +36,21 @@ namespace EmergencyManagementMCP.Models
         }
     }
 
+    public class DrivingInstruction
+    {
+        [JsonPropertyName("routeOffsetInMeters")]
+        public int RouteOffsetInMeters { get; set; }
+        
+        [JsonPropertyName("travelTimeInSeconds")]
+        public int TravelTimeInSeconds { get; set; }
+        
+        [JsonPropertyName("point")]
+        public Coordinate Point { get; set; } = new();
+        
+        [JsonPropertyName("message")]
+        public string Message { get; set; } = string.Empty;
+    }
+
     public class RouteResult
     {
         [JsonPropertyName("distanceMeters")]
@@ -46,6 +61,9 @@ namespace EmergencyManagementMCP.Models
         
         [JsonPropertyName("polylineGeoJson")]
         public string PolylineGeoJson { get; set; } = string.Empty;
+        
+        [JsonPropertyName("drivingDirections")]
+        public DrivingInstruction[] DrivingDirections { get; set; } = Array.Empty<DrivingInstruction>();
     }
 
     public class FireAwareRouteResponse

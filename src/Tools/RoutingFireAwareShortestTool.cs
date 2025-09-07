@@ -190,7 +190,8 @@ namespace EmergencyManagementMCP.Tools
                 { 
                     DistanceMeters = 0, 
                     TravelTimeSeconds = 0, 
-                    PolylineGeoJson = """{"type":"LineString","coordinates":[]}""" 
+                    PolylineGeoJson = """{"type":"LineString","coordinates":[]}""",
+                    DrivingDirections = Array.Empty<DrivingInstruction>()
                 },
                 AppliedAvoids = new[] { $"ERROR: {errorMessage}" },
                 TraceId = traceId

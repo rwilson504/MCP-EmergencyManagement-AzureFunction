@@ -162,7 +162,21 @@ The `routing.fireAwareShortest` tool provides intelligent routing that avoids ac
   "route": {
     "distanceMeters": 15420,
     "travelTimeSeconds": 1140,
-    "polylineGeoJson": "{\"type\":\"LineString\",\"coordinates\":[...]}"
+    "polylineGeoJson": "{\"type\":\"LineString\",\"coordinates\":[...]}",
+    "drivingDirections": [
+      {
+        "routeOffsetInMeters": 0,
+        "travelTimeInSeconds": 0,
+        "point": { "lat": 34.0522, "lon": -118.2437 },
+        "message": "Head north on Main St"
+      },
+      {
+        "routeOffsetInMeters": 1200,
+        "travelTimeInSeconds": 180,
+        "point": { "lat": 34.0530, "lon": -118.2440 },
+        "message": "Turn right onto Broadway"
+      }
+    ]
   },
   "appliedAvoids": ["minLon,minLat,maxLon,maxLat"],
   "traceId": "abc12345"
@@ -176,6 +190,7 @@ The `routing.fireAwareShortest` tool provides intelligent routing that avoids ac
 - Integrates with Azure Maps for route calculation
 - Supports optional road closure avoidance
 - Returns GeoJSON LineString for route visualization
+- Provides turn-by-turn driving directions with detailed instructions
 
 **Sample Test Payload:**
 ```json
