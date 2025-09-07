@@ -32,6 +32,16 @@ This MCP server is dedicated to helping emergency management professionals and a
 
 Use this server to integrate emergency management capabilities into your applications, ensuring responders have access to the most current information for effective decision-making.
 
+## Available MCP Tools
+
+### Fire Zone Checking Tools
+- **emergency.addressFireZoneCheck** - Check if a street address is located within an active fire zone and get coordinates (address-based)
+- **emergency.coordinateFireZoneCheck** - Check if latitude/longitude coordinates are located within an active fire zone
+
+### Fire-Aware Routing Tools  
+- **routing.addressFireAwareShortest** - Compute the shortest route between addresses while avoiding wildfire perimeters and closures
+- **routing.coordinateFireAwareShortest** - Compute the shortest route while avoiding wildfire perimeters and closures (coordinate-based)
+
 # Getting Started with Remote MCP Servers using Azure Functions (.NET/C#)
 
 This is a quickstart template to easily build and deploy a custom remote MCP server to the cloud using Azure functions. You can clone/restore/run on your local machine with debugging, and `azd up` to have it in the cloud in a couple minutes.  The MCP server is secured by design using keys and HTTPs, and allows more options for OAuth using EasyAuth and/or API Management as well as network isolation using VNET.  
@@ -102,15 +112,15 @@ An Azure Storage Emulator is needed for this particular sample because we will s
     func start
     ```
 
-Note by default this will use the webhooks route: `/runtime/webhooks/mcp/sse`.  Later we will use this in Azure to set the key on client/host calls: `/runtime/webhooks/mcp/sse?code=<system_key>`
+Note by default this will use the webhooks route: `/runtime/webhooks/mcp/streamable`.  Later we will use this in Azure to set the key on client/host calls: `/runtime/webhooks/mcp/streamable?code=<system_key>`
 
 ## Connect to the *local* MCP server from within a client/host
 
 ### VS Code - Copilot Edits
 
-1. **Add MCP Server** from command palette and add URL to your running Function app's SSE endpoint:
+1. **Add MCP Server** from command palette and add URL to your running Function app's streamable endpoint:
     ```shell
-    http://0.0.0.0:7071/runtime/webhooks/mcp/sse
+    http://0.0.0.0:7071/runtime/webhooks/mcp/streamable
     ```
 1. **List MCP Servers** from command palette and start the server
 1. In Copilot chat agent mode enter a prompt to trigger the tool, e.g., select some code and enter this prompt
@@ -139,45 +149,50 @@ Note by default this will use the webhooks route: `/runtime/webhooks/mcp/sse`.  
     ```
 
 1. CTRL click to load the MCP Inspector web app from the URL displayed by the app (e.g. http://0.0.0.0:5173/#resources)
-1. Set the transport type to `SSE` 
-1. Set the URL to your running Function app's SSE endpoint and **Connect**:
+1. Set the transport type to `streamable` 
+1. Set the URL to your running Function app's streamable endpoint and **Connect**:
     ```shell
-    http://0.0.0.0:7071/runtime/webhooks/mcp/sse
+    http://0.0.0.0:7071/runtime/webhooks/mcp/streamable
     ```
 1. **List Tools**.  Click on a tool and **Run Tool**.  
 
-## Available MCP Tools
+## Tool Documentation
 
-### Emergency Facility Management
-- **ListFacilities** - Search for emergency facilities with filtering by location, services, and facility type
-- **GetFacilityById** - Get detailed information about a specific facility
-- **ListFacilityServices** - List services available at a specific facility
-- **GetFacilityServiceDetails** - Get detailed information about specific facility services
-- **ListFacilityIds** - Get a list of facility IDs filtered by type
-- **ListNearbyFacilities** - Find facilities within a specified drive time from a location
+### Fire-Aware Routing Tools
 
-### Fire-Aware Routing
-- **routing.fireAwareShortest** - Compute the shortest route while avoiding wildfire perimeters and closures
+#### Address-Based Fire-Aware Routing (`routing.addressFireAwareShortest`)
 
-### Address Fire Zone Check
-- **emergency.addressFireZoneCheck** - Check if a street address is located within an active fire zone and get coordinates
-
-#### Fire-Aware Routing Tool
-
-The `routing.fireAwareShortest` tool provides intelligent routing that avoids active wildfire perimeters and road closures, ensuring safer travel routes during emergency conditions.
+Compute the shortest route between addresses while avoiding wildfire perimeters and closures.
 
 **Parameters:**
 ```json
 {
-  "origin": { "lat": 34.0522, "lon": -118.2437 },
-  "destination": { "lat": 34.1625, "lon": -118.1331 },
-  "bufferKm": 2.0,
-  "useClosures": true,
-  "departAtIsoUtc": "2025-09-05T13:00:00Z"
+  "originAddress": "123 Main St, Los Angeles, CA",
+  "destinationAddress": "456 Oak Ave, Pasadena, CA",
+  "avoidBufferMeters": 2000,
+  "departAtIsoUtc": "2025-09-05T13:00:00Z",
+  "profile": "driving"
 }
 ```
 
-**Response:**
+#### Coordinate-Based Fire-Aware Routing (`routing.coordinateFireAwareShortest`)
+
+Compute the shortest route using coordinates while avoiding wildfire perimeters and closures.
+
+**Parameters:**
+```json
+{
+  "originLat": 34.0522,
+  "originLon": -118.2437,
+  "destinationLat": 34.1625,
+  "destinationLon": -118.1331,
+  "avoidBufferMeters": 2000,
+  "departAtIsoUtc": "2025-09-05T13:00:00Z",
+  "profile": "driving"
+}
+```
+
+**Fire-Aware Routing Response:**
 ```json
 {
   "route": {
@@ -190,12 +205,6 @@ The `routing.fireAwareShortest` tool provides intelligent routing that avoids ac
         "travelTimeInSeconds": 0,
         "point": { "lat": 34.0522, "lon": -118.2437 },
         "message": "Head north on Main St"
-      },
-      {
-        "routeOffsetInMeters": 1200,
-        "travelTimeInSeconds": 180,
-        "point": { "lat": 34.0530, "lon": -118.2440 },
-        "message": "Turn right onto Broadway"
       }
     ]
   },
@@ -209,23 +218,14 @@ The `routing.fireAwareShortest` tool provides intelligent routing that avoids ac
 - Caches fire data for 10 minutes to optimize performance
 - Applies configurable buffer zones around fire perimeters
 - Integrates with Azure Maps for route calculation
-- Supports optional road closure avoidance
 - Returns GeoJSON LineString for route visualization
-- Provides turn-by-turn driving directions with detailed instructions
+- Provides turn-by-turn driving directions
 
-**Sample Test Payload:**
-```json
-{
-  "origin": { "lat": 34.0522, "lon": -118.2437 },
-  "destination": { "lat": 34.1625, "lon": -118.1331 },
-  "bufferKm": 3.0,
-  "useClosures": true
-}
-```
+### Fire Zone Checking Tools
 
-#### Address Fire Zone Check Tool
+#### Address-Based Fire Zone Check (`emergency.addressFireZoneCheck`)
 
-The `emergency.addressFireZoneCheck` tool allows you to check if a street address is located within an active wildfire zone, providing both geocoding results and fire zone information.
+Check if a street address is located within an active fire zone and get coordinates.
 
 **Parameters:**
 ```json
@@ -255,20 +255,39 @@ The `emergency.addressFireZoneCheck` tool allows you to check if a street addres
 }
 ```
 
-**Key Features:**
+#### Coordinate-Based Fire Zone Check (`emergency.coordinateFireZoneCheck`)
+
+Check if latitude/longitude coordinates are located within an active fire zone.
+
+**Parameters:**
+```json
+{
+  "lat": 39.7596,
+  "lon": -121.6219
+}
+```
+
+**Response:**
+```json
+{
+  "coordinates": { "lat": 39.7596, "lon": -121.6219 },
+  "fireZone": {
+    "isInFireZone": true,
+    "fireZoneName": "Camp Fire",
+    "incidentName": "Camp Fire Incident",
+    "containmentPercent": 85.0,
+    "acresBurned": 153336.0,
+    "lastUpdate": "2024-01-15T14:30:00Z"
+  },
+  "traceId": "abc12345"
+}
+```
+
+**Fire Zone Check Key Features:**
 - Geocodes addresses using Azure Maps Search API with high accuracy
-- Returns formatted address and coordinate information
 - Checks coordinates against real-time wildfire perimeter data from ArcGIS
 - Provides detailed fire zone information including incident name, containment, and size
 - Caches fire data for 10 minutes to optimize performance
-- Supports any US address format
-
-**Sample Test Payload:**
-```json
-{
-  "address": "1 Hacker Way, Menlo Park, CA"
-}
-```
 
 ## Deploy to Azure for Remote MCP
 
@@ -305,20 +324,20 @@ You can opt-in to a VNet being used in the sample. To do so, do this before `azd
 azd env set VNET_ENABLED true
 ```
 
-Additionally, [API Management]() can be used for improved security and policies over your MCP Server, and [App Service built-in authentication](https://learn.microsoft.com/en-us/azure/app-service/overview-authentication-authorization) can be used to set up your favorite OAuth provider including Entra.  
+Additionally, [API Management](https://learn.microsoft.com/en-us/azure/api-management/) can be used for improved security and policies over your MCP Server, and [App Service built-in authentication](https://learn.microsoft.com/en-us/azure/app-service/overview-authentication-authorization) can be used to set up your favorite OAuth provider including Entra.  
 
 ## Connect to your *remote() MCP server function app from a client
 
-Your client will need a key in order to invoke the new hosted SSE endpoint, which will be of the form `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp/sse`. The hosted function requires a system key by default which can be obtained from the [portal](https://learn.microsoft.com/en-us/azure/azure-functions/function-keys-how-to?tabs=azure-portal) or the CLI (`az functionapp keys list --resource-group <resource_group> --name <function_app_name>`). Obtain the system key named `mcp_extension`.
+Your client will need a key in order to invoke the new hosted streamable endpoint, which will be of the form `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp/streamable`. The hosted function requires a system key by default which can be obtained from the [portal](https://learn.microsoft.com/en-us/azure/azure-functions/function-keys-how-to?tabs=azure-portal) or the CLI (`az functionapp keys list --resource-group <resource_group> --name <function_app_name>`). Obtain the system key named `mcp_extension`.
 
 ### Connect to remote MCP server in MCP Inspector
 For MCP Inspector, you can include the key in the URL: 
 ```plaintext
-https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp/sse?code=<your-mcp-extension-system-key>
+https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp/streamable?code=<your-mcp-extension-system-key>
 ```
 
 ### Connect to remote MCP server in VS Code - GitHub Copilot
-For GitHub Copilot within VS Code, you should instead set the key as the `x-functions-key` header in `mcp.json`, and you would just use `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp/sse` for the URL. The following example uses an input and will prompt you to provide the key when you start the server from VS Code.  Note [mcp.json]() has already been included in this repo and will be picked up by VS Code.  Click Start on the server to be prompted for values including `functionapp-name` (in your /.azure/*/.env file) and `functions-mcp-extension-system-key` which can be obtained from CLI command above or API Keys in the portal for the Function App.  
+For GitHub Copilot within VS Code, you should instead set the key as the `x-functions-key` header in `mcp.json`, and you would just use `https://<funcappname>.azurewebsites.net/runtime/webhooks/mcp/streamable` for the URL. The following example uses an input and will prompt you to provide the key when you start the server from VS Code.  Note [.mcp.json](.mcp.json) has already been included in this repo and will be picked up by VS Code.  Click Start on the server to be prompted for values including `functionapp-name` (in your /.azure/*/.env file) and `functions-mcp-extension-system-key` which can be obtained from CLI command above or API Keys in the portal for the Function App.  
 
 ```json
 {
@@ -337,15 +356,15 @@ For GitHub Copilot within VS Code, you should instead set the key as the `x-func
     ],
     "servers": {
         "remote-mcp-function": {
-            "type": "sse",
-            "url": "https://${input:functionapp-name}.azurewebsites.net/runtime/webhooks/mcp/sse",
+            "type": "streamable",
+            "url": "https://${input:functionapp-name}.azurewebsites.net/runtime/webhooks/mcp/streamable",
             "headers": {
                 "x-functions-key": "${input:functions-mcp-extension-system-key}"
             }
         },
         "local-mcp-function": {
-            "type": "sse",
-            "url": "http://0.0.0.0:7071/runtime/webhooks/mcp/sse"
+            "type": "streamable",
+            "url": "http://0.0.0.0:7071/runtime/webhooks/mcp/streamable"
         }
     }
 }
