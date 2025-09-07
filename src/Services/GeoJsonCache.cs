@@ -1,5 +1,6 @@
 using Azure.Storage.Blobs;
 using Azure.Identity;
+using Azure.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Text;
@@ -35,10 +36,24 @@ namespace EmergencyManagementMCP.Services
 
             try
             {
-                // Use DefaultAzureCredential for managed identity authentication
-                _blobServiceClient = new BlobServiceClient(new Uri(blobServiceUrl), new DefaultAzureCredential());
-                _logger.LogInformation("GeoJsonCache initialized successfully: container={ContainerName}, blobService={BlobServiceUrl}", 
-                    _containerName, blobServiceUrl);
+                // Use ManagedIdentityCredential with specific client ID for Azure Functions
+                var clientId = config["AzureWebJobsStorage__clientId"];
+                Azure.Core.TokenCredential credential;
+                
+                if (!string.IsNullOrEmpty(clientId))
+                {
+                    _logger.LogDebug("Using ManagedIdentityCredential with client ID: {ClientId}", clientId);
+                    credential = new ManagedIdentityCredential(clientId);
+                }
+                else
+                {
+                    _logger.LogDebug("Using DefaultAzureCredential (no client ID specified)");
+                    credential = new DefaultAzureCredential();
+                }
+                
+                _blobServiceClient = new BlobServiceClient(new Uri(blobServiceUrl), credential);
+                _logger.LogInformation("GeoJsonCache initialized successfully: container={ContainerName}, blobService={BlobServiceUrl}, credential={CredentialType}", 
+                    _containerName, blobServiceUrl, credential.GetType().Name);
             }
             catch (Exception ex)
             {
