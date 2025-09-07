@@ -27,8 +27,8 @@ namespace EmergencyManagementMCP.Tests
             
             // Test Coordinate-based Routing Tool
             Console.WriteLine($"✅ RoutingFireAwareShortestTool:");
-            Console.WriteLine($"   Name: {RoutingFireAwareShortestTool.ToolName}");
-            Console.WriteLine($"   Description: {RoutingFireAwareShortestTool.ToolDescription}");
+            Console.WriteLine($"   Name: {CoordinateRoutingFireAwareShortestTool.ToolName}");
+            Console.WriteLine($"   Description: {CoordinateRoutingFireAwareShortestTool.ToolDescription}");
             
             // Test Address-based Routing Tool
             Console.WriteLine($"✅ AddressRoutingFireAwareShortestTool:");
@@ -48,8 +48,8 @@ namespace EmergencyManagementMCP.Tests
             
             // Test Coordinate Routing Properties  
             Console.WriteLine($"✅ RoutingFireAwareShortestToolPropertyStrings:");
-            Console.WriteLine($"   Origin Lat: {RoutingFireAwareShortestToolPropertyStrings.OriginLatName} ({RoutingFireAwareShortestToolPropertyStrings.OriginLatType})");
-            Console.WriteLine($"   Origin Lon: {RoutingFireAwareShortestToolPropertyStrings.OriginLonName} ({RoutingFireAwareShortestToolPropertyStrings.OriginLonType})");
+            Console.WriteLine($"   Origin Lat: {CoordinateRoutingFireAwareShortestToolPropertyStrings.OriginLatName} ({CoordinateRoutingFireAwareShortestToolPropertyStrings.OriginLatType})");
+            Console.WriteLine($"   Origin Lon: {CoordinateRoutingFireAwareShortestToolPropertyStrings.OriginLonName} ({CoordinateRoutingFireAwareShortestToolPropertyStrings.OriginLonType})");
             
             // Test Address Routing Properties
             Console.WriteLine($"✅ AddressRoutingFireAwareShortestToolPropertyStrings:");
@@ -63,7 +63,7 @@ namespace EmergencyManagementMCP.Tests
             Console.WriteLine($"  • {AddressFireZoneCheckTool.ToolName} - Address input");
             Console.WriteLine($"  • {CoordinateFireZoneCheckTool.ToolName} - Coordinate input");
             Console.WriteLine("\nFire-Aware Routing:");
-            Console.WriteLine($"  • {RoutingFireAwareShortestTool.ToolName} - Coordinate input");
+            Console.WriteLine($"  • {CoordinateRoutingFireAwareShortestTool.ToolName} - Coordinate input");
             Console.WriteLine($"  • {AddressRoutingFireAwareShortestTool.ToolName} - Address input");
         }
     }

@@ -6,20 +6,20 @@ using Microsoft.Extensions.Logging;
 
 namespace EmergencyManagementMCP.Tools
 {
-    public class RoutingFireAwareShortestTool
+    public class CoordinateRoutingFireAwareShortestTool
     {
         private readonly IGeoServiceClient _geoServiceClient;
         private readonly IGeoJsonCache _geoJsonCache;
         private readonly IGeometryUtils _geometryUtils;
         private readonly IRouterClient _routerClient;
-        private readonly ILogger<RoutingFireAwareShortestTool> _logger;
+        private readonly ILogger<CoordinateRoutingFireAwareShortestTool> _logger;
 
-        public RoutingFireAwareShortestTool(
+        public CoordinateRoutingFireAwareShortestTool(
             IGeoServiceClient geoServiceClient,
             IGeoJsonCache geoJsonCache,
             IGeometryUtils geometryUtils,
             IRouterClient routerClient,
-            ILogger<RoutingFireAwareShortestTool> logger)
+            ILogger<CoordinateRoutingFireAwareShortestTool> logger)
         {
             _geoServiceClient = geoServiceClient;
             _geoJsonCache = geoJsonCache;
@@ -28,16 +28,16 @@ namespace EmergencyManagementMCP.Tools
             _logger = logger;
         }
 
-        [Function(nameof(RoutingFireAwareShortestTool))]
+        [Function(nameof(CoordinateRoutingFireAwareShortestTool))]
         public async Task<object> Run(
             [McpToolTrigger(ToolName, ToolDescription)] ToolInvocationContext context,
-            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.OriginLatName, RoutingFireAwareShortestToolPropertyStrings.OriginLatType, RoutingFireAwareShortestToolPropertyStrings.OriginLatDescription, Required = true)] double originLat,
-            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.OriginLonName, RoutingFireAwareShortestToolPropertyStrings.OriginLonType, RoutingFireAwareShortestToolPropertyStrings.OriginLonDescription, Required = true)] double originLon,
-            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.DestinationLatName, RoutingFireAwareShortestToolPropertyStrings.DestinationLatType, RoutingFireAwareShortestToolPropertyStrings.DestinationLatDescription, Required = true)] double destinationLat,
-            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.DestinationLonName, RoutingFireAwareShortestToolPropertyStrings.DestinationLonType, RoutingFireAwareShortestToolPropertyStrings.DestinationLonDescription, Required = true)] double destinationLon,
-            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersName, RoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersType, RoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersDescription, Required = false)] double? avoidBufferMeters,
-            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcName, RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcType, RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcDescription, Required = false)] string? departAtIsoUtc,
-            [McpToolProperty(RoutingFireAwareShortestToolPropertyStrings.ProfileName, RoutingFireAwareShortestToolPropertyStrings.ProfileType, RoutingFireAwareShortestToolPropertyStrings.ProfileDescription, Required = false)] string? profile
+            [McpToolProperty(CoordinateRoutingFireAwareShortestToolPropertyStrings.OriginLatName, CoordinateRoutingFireAwareShortestToolPropertyStrings.OriginLatType, CoordinateRoutingFireAwareShortestToolPropertyStrings.OriginLatDescription, Required = true)] double originLat,
+            [McpToolProperty(CoordinateRoutingFireAwareShortestToolPropertyStrings.OriginLonName, CoordinateRoutingFireAwareShortestToolPropertyStrings.OriginLonType, CoordinateRoutingFireAwareShortestToolPropertyStrings.OriginLonDescription, Required = true)] double originLon,
+            [McpToolProperty(CoordinateRoutingFireAwareShortestToolPropertyStrings.DestinationLatName, CoordinateRoutingFireAwareShortestToolPropertyStrings.DestinationLatType, CoordinateRoutingFireAwareShortestToolPropertyStrings.DestinationLatDescription, Required = true)] double destinationLat,
+            [McpToolProperty(CoordinateRoutingFireAwareShortestToolPropertyStrings.DestinationLonName, CoordinateRoutingFireAwareShortestToolPropertyStrings.DestinationLonType, CoordinateRoutingFireAwareShortestToolPropertyStrings.DestinationLonDescription, Required = true)] double destinationLon,
+            [McpToolProperty(CoordinateRoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersName, CoordinateRoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersType, CoordinateRoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersDescription, Required = false)] double? avoidBufferMeters,
+            [McpToolProperty(CoordinateRoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcName, CoordinateRoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcType, CoordinateRoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcDescription, Required = false)] string? departAtIsoUtc,
+            [McpToolProperty(CoordinateRoutingFireAwareShortestToolPropertyStrings.ProfileName, CoordinateRoutingFireAwareShortestToolPropertyStrings.ProfileType, CoordinateRoutingFireAwareShortestToolPropertyStrings.ProfileDescription, Required = false)] string? profile
         )
         {
             var traceId = Guid.NewGuid().ToString("N")[..8];
@@ -198,7 +198,7 @@ namespace EmergencyManagementMCP.Tools
             };
         }
 
-        public const string ToolName = "routing.fireAwareShortest";
+        public const string ToolName = "routing.coordinateFireAwareShortest";
         public const string ToolDescription = "Compute the shortest route while avoiding wildfire perimeters and closures (coordinate-based).";
     }
 }

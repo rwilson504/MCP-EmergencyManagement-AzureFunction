@@ -1,6 +1,6 @@
 namespace EmergencyManagementMCP.Tools
 {
-    public static class RoutingFireAwareShortestToolPropertyStrings
+    public static class CoordinateRoutingFireAwareShortestToolPropertyStrings
     {
         public const string OriginLatName = "OriginLat";
         public const string OriginLatType = "double";

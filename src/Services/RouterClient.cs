@@ -14,20 +14,20 @@ namespace EmergencyManagementMCP.Services
         private readonly ILogger<RouterClient> _logger;
         private readonly TokenCredential _credential;
         private readonly string _routeBase;
+        private readonly string _clientId; // Store client ID
 
         public RouterClient(HttpClient httpClient, ILogger<RouterClient> logger, IConfiguration config)
         {
             _httpClient = httpClient;
             _logger = logger;
             _routeBase = config["Maps:RouteBase"] ?? "https://atlas.microsoft.com";
+            _clientId = config["AzureWebJobsStorage:clientId"];
             
             // Use ManagedIdentityCredential with specific client ID for Azure Functions
-            var clientId = config["AzureWebJobsStorage:clientId"];
-            
-            if (!string.IsNullOrEmpty(clientId))
+            if (!string.IsNullOrEmpty(_clientId))
             {
-                _logger.LogDebug("Using ManagedIdentityCredential with client ID: {ClientId}", clientId);
-                _credential = new ManagedIdentityCredential(clientId);
+                _logger.LogDebug("Using ManagedIdentityCredential with client ID: {ClientId}", _clientId);
+                _credential = new ManagedIdentityCredential(_clientId);
             }
             else
             {
@@ -56,6 +56,9 @@ namespace EmergencyManagementMCP.Services
                 _logger.LogDebug("Obtained access token for Azure Maps, expires at: {ExpiresOn}, requestId={RequestId}", 
                     tokenResult.ExpiresOn, requestId);
 
+                _logger.LogInformation("Access token for Azure Maps, token at: {Token}", 
+                                    tokenResult.Token);
+                                    
                 var queryParams = new List<string>
                 {
                     $"api-version=1.0",
@@ -97,6 +100,12 @@ namespace EmergencyManagementMCP.Services
                 // Create HTTP request with Authorization header
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", tokenResult.Token);
+                // Add x-ms-client-id header if clientId is present
+                if (!string.IsNullOrEmpty(_clientId))
+                {
+                    request.Headers.Add("x-ms-client-id", _clientId);
+                    _logger.LogDebug("Set x-ms-client-id header: {ClientId}", _clientId);
+                }
                 
                 var httpStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var response = await _httpClient.SendAsync(request);
