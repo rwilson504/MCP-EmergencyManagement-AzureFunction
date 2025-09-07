@@ -10,7 +10,7 @@
     "Storage:CacheContainer": "routing-cache",
     
     "_comment_fires": "ArcGIS service URL for fire perimeter data",
-    "Fires:ArcGisFeatureUrl": "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query",
+    "Fires:ArcGisFeatureUrl": "https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query",
     
     "_comment_maps": "Replace with your Azure Maps subscription key",
     "Maps:RouteBase": "https://atlas.microsoft.com",
