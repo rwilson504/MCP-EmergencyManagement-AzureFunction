@@ -77,4 +77,52 @@ namespace EmergencyManagementMCP.Models
         [JsonPropertyName("traceId")]
         public string TraceId { get; set; } = string.Empty;
     }
+
+    public class GeocodingResult
+    {
+        [JsonPropertyName("address")]
+        public string Address { get; set; } = string.Empty;
+        
+        [JsonPropertyName("coordinates")]
+        public Coordinate Coordinates { get; set; } = new();
+        
+        [JsonPropertyName("confidence")]
+        public string Confidence { get; set; } = string.Empty;
+        
+        [JsonPropertyName("formattedAddress")]
+        public string FormattedAddress { get; set; } = string.Empty;
+    }
+
+    public class FireZoneInfo
+    {
+        [JsonPropertyName("isInFireZone")]
+        public bool IsInFireZone { get; set; }
+        
+        [JsonPropertyName("fireZoneName")]
+        public string FireZoneName { get; set; } = string.Empty;
+        
+        [JsonPropertyName("incidentName")]
+        public string IncidentName { get; set; } = string.Empty;
+        
+        [JsonPropertyName("containmentPercent")]
+        public double? ContainmentPercent { get; set; }
+        
+        [JsonPropertyName("acresBurned")]
+        public double? AcresBurned { get; set; }
+        
+        [JsonPropertyName("lastUpdate")]
+        public DateTime? LastUpdate { get; set; }
+    }
+
+    public class AddressFireZoneResponse
+    {
+        [JsonPropertyName("geocoding")]
+        public GeocodingResult Geocoding { get; set; } = new();
+        
+        [JsonPropertyName("fireZone")]
+        public FireZoneInfo FireZone { get; set; } = new();
+        
+        [JsonPropertyName("traceId")]
+        public string TraceId { get; set; } = string.Empty;
+    }
 }

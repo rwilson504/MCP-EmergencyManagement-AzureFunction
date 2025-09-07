@@ -30,9 +30,15 @@ routingFireAwareShortest
     .WithProperty(RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcName, RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcType, RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcDescription)
     .WithProperty(RoutingFireAwareShortestToolPropertyStrings.ProfileName, RoutingFireAwareShortestToolPropertyStrings.ProfileType, RoutingFireAwareShortestToolPropertyStrings.ProfileDescription);
 
+// MCP Tool: Address Fire Zone Check
+var addressFireZoneCheck = builder.ConfigureMcpTool(AddressFireZoneCheckTool.ToolName);
+addressFireZoneCheck
+    .WithProperty(AddressFireZoneCheckToolPropertyStrings.AddressName, AddressFireZoneCheckToolPropertyStrings.AddressType, AddressFireZoneCheckToolPropertyStrings.AddressDescription);
+
 // Register Fire-Aware Routing Services
 builder.Services.AddHttpClient<IGeoServiceClient, GeoServiceClient>();
 builder.Services.AddHttpClient<IRouterClient, RouterClient>();
+builder.Services.AddHttpClient<IGeocodingClient, GeocodingClient>();
 builder.Services.AddSingleton<IGeoJsonCache, GeoJsonCache>();
 builder.Services.AddSingleton<IGeometryUtils, GeometryUtils>();
 

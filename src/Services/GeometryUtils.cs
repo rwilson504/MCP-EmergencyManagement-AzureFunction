@@ -130,6 +130,164 @@ namespace EmergencyManagementMCP.Services
             return rectangles;
         }
 
+        public FireZoneInfo CheckPointInFireZones(string geoJson, Coordinate point)
+        {
+            var requestId = Guid.NewGuid().ToString("N")[..8];
+            _logger.LogDebug("Checking if point ({Lat},{Lon}) is in fire zones, geoJsonSize={Size} chars, requestId={RequestId}",
+                point.Lat, point.Lon, geoJson.Length, requestId);
+
+            var fireZoneInfo = new FireZoneInfo { IsInFireZone = false };
+
+            try
+            {
+                using var doc = JsonDocument.Parse(geoJson);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("features", out var features) || features.ValueKind != JsonValueKind.Array)
+                {
+                    _logger.LogWarning("Invalid GeoJSON: missing or invalid features array, requestId={RequestId}", requestId);
+                    return fireZoneInfo;
+                }
+
+                var featureCount = features.GetArrayLength();
+                _logger.LogDebug("Checking point against {FeatureCount} fire zone features, requestId={RequestId}", 
+                    featureCount, requestId);
+
+                foreach (var feature in features.EnumerateArray())
+                {
+                    if (feature.TryGetProperty("geometry", out var geometry) &&
+                        feature.TryGetProperty("properties", out var properties))
+                    {
+                        if (IsPointInGeometry(point, geometry))
+                        {
+                            _logger.LogInformation("Point ({Lat},{Lon}) is inside fire zone, requestId={RequestId}", 
+                                point.Lat, point.Lon, requestId);
+
+                            fireZoneInfo.IsInFireZone = true;
+
+                            // Extract fire zone details from properties
+                            if (properties.TryGetProperty("IncidentName", out var incidentName))
+                                fireZoneInfo.IncidentName = incidentName.GetString() ?? "";
+
+                            if (properties.TryGetProperty("FireDiscoveryDateTime", out var discovery))
+                                fireZoneInfo.FireZoneName = incidentName.GetString() ?? "";
+
+                            if (properties.TryGetProperty("PercentContained", out var containment))
+                                fireZoneInfo.ContainmentPercent = containment.GetDouble();
+
+                            if (properties.TryGetProperty("DailyAcres", out var acres))
+                                fireZoneInfo.AcresBurned = acres.GetDouble();
+
+                            if (properties.TryGetProperty("ModifiedOnDateTime", out var modified))
+                            {
+                                if (DateTime.TryParse(modified.GetString(), out var modifiedDate))
+                                    fireZoneInfo.LastUpdate = modifiedDate;
+                            }
+
+                            return fireZoneInfo; // Return first match
+                        }
+                    }
+                }
+
+                _logger.LogDebug("Point ({Lat},{Lon}) is not in any fire zone, requestId={RequestId}", 
+                    point.Lat, point.Lon, requestId);
+            }
+            catch (JsonException jsonEx)
+            {
+                _logger.LogError(jsonEx, "Failed to parse GeoJSON for fire zone check: {Message}, requestId={RequestId}", 
+                    jsonEx.Message, requestId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error checking point in fire zones, requestId={RequestId}", requestId);
+            }
+
+            return fireZoneInfo;
+        }
+
+        private bool IsPointInGeometry(Coordinate point, JsonElement geometry)
+        {
+            if (!geometry.TryGetProperty("type", out var geometryType) ||
+                !geometry.TryGetProperty("coordinates", out var coordinates))
+                return false;
+
+            var type = geometryType.GetString();
+            
+            return type switch
+            {
+                "Polygon" => IsPointInPolygon(point, coordinates),
+                "MultiPolygon" => IsPointInMultiPolygon(point, coordinates),
+                _ => false
+            };
+        }
+
+        private bool IsPointInPolygon(Coordinate point, JsonElement coordinates)
+        {
+            if (coordinates.ValueKind != JsonValueKind.Array || coordinates.GetArrayLength() == 0)
+                return false;
+
+            // Use the first ring (exterior ring) for polygon check
+            var exteriorRing = coordinates[0];
+            return IsPointInLinearRing(point, exteriorRing);
+        }
+
+        private bool IsPointInMultiPolygon(Coordinate point, JsonElement coordinates)
+        {
+            if (coordinates.ValueKind != JsonValueKind.Array)
+                return false;
+
+            foreach (var polygon in coordinates.EnumerateArray())
+            {
+                if (IsPointInPolygon(point, polygon))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool IsPointInLinearRing(Coordinate point, JsonElement ring)
+        {
+            if (ring.ValueKind != JsonValueKind.Array)
+                return false;
+
+            var vertices = new List<(double lat, double lon)>();
+            foreach (var coord in ring.EnumerateArray())
+            {
+                if (coord.ValueKind == JsonValueKind.Array && coord.GetArrayLength() >= 2)
+                {
+                    var lon = coord[0].GetDouble();
+                    var lat = coord[1].GetDouble();
+                    vertices.Add((lat, lon));
+                }
+            }
+
+            return IsPointInPolygonRaycast(point.Lat, point.Lon, vertices);
+        }
+
+        // Ray casting algorithm for point-in-polygon test
+        private bool IsPointInPolygonRaycast(double testLat, double testLon, List<(double lat, double lon)> vertices)
+        {
+            if (vertices.Count < 3) return false;
+
+            bool inside = false;
+            int j = vertices.Count - 1;
+
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                var (iLat, iLon) = vertices[i];
+                var (jLat, jLon) = vertices[j];
+
+                if (((iLat > testLat) != (jLat > testLat)) &&
+                    (testLon < (jLon - iLon) * (testLat - iLat) / (jLat - iLat) + iLon))
+                {
+                    inside = !inside;
+                }
+                j = i;
+            }
+
+            return inside;
+        }
+
         private BoundingBox? ExtractBoundingBox(JsonElement geometry)
         {
             if (!geometry.TryGetProperty("coordinates", out var coordinates))
