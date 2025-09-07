@@ -199,6 +199,6 @@ namespace EmergencyManagementMCP.Tools
         }
 
         public const string ToolName = "routing.fireAwareShortest";
-        public const string ToolDescription = "Compute the shortest route while avoiding wildfire perimeters and closures.";
+        public const string ToolDescription = "Compute the shortest route while avoiding wildfire perimeters and closures (coordinate-based).";
     }
 }

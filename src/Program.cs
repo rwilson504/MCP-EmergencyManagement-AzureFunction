@@ -19,7 +19,7 @@ builder.Services.Configure<LoggerFilterOptions>(options =>
     options.MinLevel = LogLevel.Information;
 });
 
-// MCP Tool: Fire-Aware Routing
+// MCP Tool: Fire-Aware Routing (Coordinate-based)
 var routingFireAwareShortest = builder.ConfigureMcpTool(RoutingFireAwareShortestTool.ToolName);
 routingFireAwareShortest
     .WithProperty(RoutingFireAwareShortestToolPropertyStrings.OriginLatName, RoutingFireAwareShortestToolPropertyStrings.OriginLatType, RoutingFireAwareShortestToolPropertyStrings.OriginLatDescription)
@@ -30,10 +30,25 @@ routingFireAwareShortest
     .WithProperty(RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcName, RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcType, RoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcDescription)
     .WithProperty(RoutingFireAwareShortestToolPropertyStrings.ProfileName, RoutingFireAwareShortestToolPropertyStrings.ProfileType, RoutingFireAwareShortestToolPropertyStrings.ProfileDescription);
 
+// MCP Tool: Fire-Aware Routing (Address-based)
+var addressRoutingFireAwareShortest = builder.ConfigureMcpTool(AddressRoutingFireAwareShortestTool.ToolName);
+addressRoutingFireAwareShortest
+    .WithProperty(AddressRoutingFireAwareShortestToolPropertyStrings.OriginAddressName, AddressRoutingFireAwareShortestToolPropertyStrings.OriginAddressType, AddressRoutingFireAwareShortestToolPropertyStrings.OriginAddressDescription)
+    .WithProperty(AddressRoutingFireAwareShortestToolPropertyStrings.DestinationAddressName, AddressRoutingFireAwareShortestToolPropertyStrings.DestinationAddressType, AddressRoutingFireAwareShortestToolPropertyStrings.DestinationAddressDescription)
+    .WithProperty(AddressRoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersName, AddressRoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersType, AddressRoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersDescription)
+    .WithProperty(AddressRoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcName, AddressRoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcType, AddressRoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcDescription)
+    .WithProperty(AddressRoutingFireAwareShortestToolPropertyStrings.ProfileName, AddressRoutingFireAwareShortestToolPropertyStrings.ProfileType, AddressRoutingFireAwareShortestToolPropertyStrings.ProfileDescription);
+
 // MCP Tool: Address Fire Zone Check
 var addressFireZoneCheck = builder.ConfigureMcpTool(AddressFireZoneCheckTool.ToolName);
 addressFireZoneCheck
     .WithProperty(AddressFireZoneCheckToolPropertyStrings.AddressName, AddressFireZoneCheckToolPropertyStrings.AddressType, AddressFireZoneCheckToolPropertyStrings.AddressDescription);
+
+// MCP Tool: Coordinate Fire Zone Check  
+var coordinateFireZoneCheck = builder.ConfigureMcpTool(CoordinateFireZoneCheckTool.ToolName);
+coordinateFireZoneCheck
+    .WithProperty(CoordinateFireZoneCheckToolPropertyStrings.LatName, CoordinateFireZoneCheckToolPropertyStrings.LatType, CoordinateFireZoneCheckToolPropertyStrings.LatDescription)
+    .WithProperty(CoordinateFireZoneCheckToolPropertyStrings.LonName, CoordinateFireZoneCheckToolPropertyStrings.LonType, CoordinateFireZoneCheckToolPropertyStrings.LonDescription);
 
 // Register Fire-Aware Routing Services
 builder.Services.AddHttpClient<IGeoServiceClient, GeoServiceClient>();
