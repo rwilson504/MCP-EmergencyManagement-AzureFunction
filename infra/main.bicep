@@ -107,7 +107,7 @@ module api './app/api.bicep' = {
     appSettings: {
       'Storage__BlobServiceUrl': 'https://${storage.outputs.name}.blob.core.windows.net'
       'Storage__CacheContainer': geoCacheContainerName
-      'Fires__ArcGisFeatureUrl': 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Wildland_Fire_Perimeters_ToDate/FeatureServer/0/query'
+      'Fires__ArcGisFeatureUrl': 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query'
       'Maps__RouteBase': 'https://atlas.microsoft.com'
       'Maps__Key': maps.outputs.primaryKey
     }
