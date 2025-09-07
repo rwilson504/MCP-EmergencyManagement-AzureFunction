@@ -2,6 +2,7 @@ using EmergencyManagementMCP.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
+using System.Web;
 
 namespace EmergencyManagementMCP.Services
 {
@@ -15,7 +16,7 @@ namespace EmergencyManagementMCP.Services
         {
             _httpClient = httpClient;
             _logger = logger;
-            _arcGisFeatureUrl = config["Fires:ArcGisFeatureUrl"] ?? "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Wildland_Fire_Perimeters_ToDate/FeatureServer/0/query";
+            _arcGisFeatureUrl = config["Fires:ArcGisFeatureUrl"] ?? "https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query";
             
             _logger.LogInformation("GeoServiceClient initialized with ArcGIS URL: {Url}", _arcGisFeatureUrl);
         }
@@ -30,9 +31,28 @@ namespace EmergencyManagementMCP.Services
                 
             try
             {
-                var sinceDate = DateTime.UtcNow.AddMinutes(-sinceMins).ToString("yyyy-MM-dd HH:mm:ss");
+                // Build the WHERE clause - for fire perimeters, we might want recent fires
+                // Note: The 'sinceMins' parameter can be used for temporal filtering if the service supports it
+                var whereClause = "1=1"; // Default to get all features
                 
-                var query = $"where=1=1&geometry={bbox.MinLon},{bbox.MinLat},{bbox.MaxLon},{bbox.MaxLat}&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&f=geojson";
+                // Build geometry parameter as envelope: xmin,ymin,xmax,ymax
+                var geometryParam = $"{bbox.MinLon},{bbox.MinLat},{bbox.MaxLon},{bbox.MaxLat}";
+                
+                // Build the query string following ArcGIS REST API standards
+                var queryParams = new Dictionary<string, string>
+                {
+                    ["where"] = whereClause,
+                    ["geometry"] = geometryParam,
+                    ["geometryType"] = "esriGeometryEnvelope",
+                    ["spatialRel"] = "esriSpatialRelIntersects",
+                    ["outFields"] = "*",
+                    ["returnGeometry"] = "true",
+                    ["f"] = "geojson"
+                };
+                
+                // Build query string with proper URL encoding
+                var query = string.Join("&", queryParams.Select(kvp => 
+                    $"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(kvp.Value)}"));
                 
                 var requestUrl = $"{_arcGisFeatureUrl}?{query}";
                 
