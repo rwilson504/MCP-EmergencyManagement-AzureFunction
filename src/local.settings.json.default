@@ -22,7 +22,10 @@
     "_comment_logging": "Enhanced logging settings for debugging",
     "AZURE_CLIENT_ID": "",
     "AZURE_CLIENT_SECRET": "",
-    "AZURE_TENANT_ID": ""
+    "AZURE_TENANT_ID": "",
+    
+    "_comment_managed_identity": "For Azure Functions, the managed identity client ID is automatically set by the infrastructure",
+    "AzureWebJobsStorage__clientId": ""
   },
   "Host": {
     "CORS": "*",
