@@ -38,7 +38,7 @@ namespace EmergencyManagementMCP.Services
             {
                 var queryParams = new List<string>
                 {
-                    $"api-version=2025-01-01",
+                    $"api-version=1.0",
                     $"subscription-key={_mapsKey}",
                     $"query={origin.Lat},{origin.Lon}:{destination.Lat},{destination.Lon}",
                     "routeType=fastest",
