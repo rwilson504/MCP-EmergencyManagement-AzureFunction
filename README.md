@@ -469,6 +469,49 @@ traces
 
 For additional debugging, enable Debug log level for the `EmergencyManagementMCP` namespace to see detailed request processing steps.
 
+## Testing
+
+The project includes comprehensive integration tests to validate functionality and support development workflows.
+
+### Running Tests
+
+Run all tests from the solution root:
+```bash
+dotnet test
+```
+
+Run tests with detailed output for debugging:
+```bash
+dotnet test --logger "console;verbosity=detailed"
+```
+
+Run a specific test class:
+```bash
+dotnet test --filter "ClassName=AddressFireZoneCheckTest"
+```
+
+### Test Coverage
+
+The integration tests cover:
+- **API Integration**: URL construction and parameter validation for ArcGIS and Azure Maps APIs
+- **Model Validation**: Data structure integrity and JSON serialization/deserialization
+- **Coordinate Processing**: Bounding box calculations and coordinate transformations
+- **Response Parsing**: JSON response extraction and driving direction processing
+- **Business Logic**: Address fire zone checking and geocoding workflows
+
+### Test Project Structure
+
+All tests are located in `tests/EmergencyManagementMcp.IntegrationTests/`:
+- **AddressFireZoneCheckTest** - Core address fire zone checking functionality
+- **ArcGisUrlConstructionTest** - ArcGIS API URL and parameter validation
+- **RouterClientApiFormatTest** - Azure Maps API request formatting
+- **DrivingDirectionsTest** - JSON response parsing and instruction extraction
+- **CaliforniaBoundingBoxTest** - Geographic coordinate handling
+- **CoordinateTransformationDebugTest** - Coordinate transformation debugging
+- **StandaloneAddressFireZoneTest** - Model validation and data flow testing
+
+For more details, see the [test project README](tests/EmergencyManagementMcp.IntegrationTests/README.md).
+
 ## Clean up resources
 
 When you're done working with your function app and related resources, you can use this command to delete the function app and its related resources from Azure and avoid incurring any further costs:

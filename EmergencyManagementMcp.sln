@@ -5,6 +5,10 @@ VisualStudioVersion = 17.12.35728.132
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyManagementMcp", "src\EmergencyManagementMcp.csproj", "{39248EBA-78B9-4E4C-86E4-F0B039D4A94D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{288CF8CB-F1E5-4B2D-8436-4E52A5D6287A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmergencyManagementMcp.IntegrationTests", "tests\EmergencyManagementMcp.IntegrationTests\EmergencyManagementMcp.IntegrationTests.csproj", "{1F0BBF03-9CBA-41F0-9463-3B32693C42E5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,11 +19,18 @@ Global
 		{39248EBA-78B9-4E4C-86E4-F0B039D4A94D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{39248EBA-78B9-4E4C-86E4-F0B039D4A94D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{39248EBA-78B9-4E4C-86E4-F0B039D4A94D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F0BBF03-9CBA-41F0-9463-3B32693C42E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F0BBF03-9CBA-41F0-9463-3B32693C42E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F0BBF03-9CBA-41F0-9463-3B32693C42E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F0BBF03-9CBA-41F0-9463-3B32693C42E5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {46C26AF6-8A68-4A70-BBD1-D283FA4514DF}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1F0BBF03-9CBA-41F0-9463-3B32693C42E5} = {288CF8CB-F1E5-4B2D-8436-4E52A5D6287A}
 	EndGlobalSection
 EndGlobal
