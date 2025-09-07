@@ -1,1 +1,17 @@
-{"inputs":[],"servers":{"MS Learn":{"type":"sse","url":"https://learn.microsoft.com/api/mcp","headers":{}},"drawio":{"command":"npx","args":["-y","drawio-mcp-server"]}}}
+{
+    "inputs": [],
+    "servers": {
+        "MS Learn": {
+            "type": "sse",
+            "url": "https://learn.microsoft.com/api/mcp",
+            "headers": {}
+        },
+        "drawio": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "drawio-mcp-server"
+            ]
+        }
+    }
+}
