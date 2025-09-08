@@ -5,7 +5,7 @@ This diagram shows the technical architecture of the MCP Emergency Management Az
 ```mermaid
 graph TB
     %% User and Agent Layer
-    User[👤 End User] --> Agent[🤖 AI Agent<br/>Claude/ChatGPT/etc]
+    User[👤 End User] --> Agent[🤖 AI Agent<br/>Copilot Studio/Claude/ChatGPT/etc]
     Agent --> MCPClient[📡 MCP Client]
     
     %% MCP Connection
