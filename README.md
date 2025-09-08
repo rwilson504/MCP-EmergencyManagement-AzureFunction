@@ -28,7 +28,6 @@ While many APIs can be exposed directly through API Management (APIM) and MCP fo
 
 ---
 
-
 This MCP server is dedicated to helping emergency management professionals and applications with:
 
 - **Fire Zone Checking**: Instantly determine if a street address or set of coordinates is located within an active wildfire perimeter, including incident details and containment status.
@@ -48,17 +47,29 @@ Use this server to integrate emergency management capabilities into your applica
 - **routing.addressFireAwareShortest** - Compute the shortest route between addresses while avoiding wildfire perimeters and closures
 - **routing.coordinateFireAwareShortest** - Compute the shortest route while avoiding wildfire perimeters and closures (coordinate-based)
 
-## Available MCP Tools
+## Architecture Diagrams
 
-### Fire Zone Checking Tools
-- **emergency.addressFireZoneCheck** - Check if a street address is located within an active fire zone and get coordinates (address-based)
-- **emergency.coordinateFireZoneCheck** - Check if latitude/longitude coordinates are located within an active fire zone
+This section provides visual representations of how the MCP Emergency Management Azure Function works, specifically focusing on the fire-aware routing functionality.
 
-### Fire-Aware Routing Tools  
-- **routing.addressFireAwareShortest** - Compute the shortest route between addresses while avoiding wildfire perimeters and closures
-- **routing.coordinateFireAwareShortest** - Compute the shortest route while avoiding wildfire perimeters and closures (coordinate-based)
+### Technical Architecture Diagram
+For developers and technical stakeholders, see the detailed [Technical Architecture Diagram](technical-architecture.md) which shows:
+- Azure resource connections and data flow
+- Authentication and security mechanisms  
+- External API integrations (ArcGIS, Azure Maps)
+- Service layer components and dependencies
 
-# Getting Started with Remote MCP Servers using Azure Functions (.NET/C#)
+### Logical Flow Diagram  
+For business users and non-technical stakeholders, see the [Logical Flow Diagram](logical-flow.md) which explains:
+- Step-by-step user journey
+- How fire-aware routing works in simple terms
+- Why this architecture is powerful for emergency management
+- Real-world benefits and use cases
+
+Below is the original architecture diagram for the Remote MCP Server using Azure Functions:
+
+![Architecture Diagram](architecture-diagram.png)
+
+## Getting Started with Remote MCP Servers using Azure Functions (.NET/C#)
 
 This is a quickstart template to easily build and deploy a custom remote MCP server to the cloud using Azure functions. You can clone/restore/run on your local machine with debugging, and `azd up` to have it in the cloud in a couple minutes.  The MCP server is secured by design using keys and HTTPs, and allows more options for OAuth using EasyAuth and/or API Management as well as network isolation using VNET.  
 
@@ -83,28 +94,6 @@ If you're looking for this sample in more languages check out the [Node.js/TypeS
 + To use Visual Studio Code to run and debug locally:
   + [Visual Studio Code](https://code.visualstudio.com/)
   + [Azure Functions extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions)
-
-## Architecture Diagrams
-
-This section provides visual representations of how the MCP Emergency Management Azure Function works, specifically focusing on the fire-aware routing functionality.
-
-### Technical Architecture Diagram
-For developers and technical stakeholders, see the detailed [Technical Architecture Diagram](technical-architecture.md) which shows:
-- Azure resource connections and data flow
-- Authentication and security mechanisms  
-- External API integrations (ArcGIS, Azure Maps)
-- Service layer components and dependencies
-
-### Logical Flow Diagram  
-For business users and non-technical stakeholders, see the [Logical Flow Diagram](logical-flow.md) which explains:
-- Step-by-step user journey
-- How fire-aware routing works in simple terms
-- Why this architecture is powerful for emergency management
-- Real-world benefits and use cases
-
-Below is the original architecture diagram for the Remote MCP Server using Azure Functions:
-
-![Architecture Diagram](architecture-diagram.png)
 
 ## Prepare your local environment
 
