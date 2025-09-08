@@ -5,63 +5,57 @@ This diagram shows the logical flow of the fire-aware routing process in simple 
 ```mermaid
 flowchart TD
     %% User Journey
-    Start([👤 User asks AI Agent:<br/>"Find safe route from A to B<br/>avoiding wildfires"])
-    
+    Start(["👤 User asks AI Agent:<br/>Find safe route from A to B<br/>avoiding wildfires"])
+
     %% Step 1: Initial Processing
-    Agent[🤖 AI Agent calls<br/>Fire-Aware Routing Tool]
-    
+    Agent["🤖 AI Agent calls<br/>Fire-Aware Routing Tool"]
+
     %% Step 2: Input Validation
     Validate{✅ Valid coordinates<br/>and parameters?}
-    
+
     %% Step 3: Area Analysis
-    BoundingBox[📏 Calculate search area<br/>around your route<br/>+ safety buffer]
-    
+    BoundingBox["📏 Calculate search area<br/>around your route<br/>+ safety buffer"]
+
     %% Step 4: Fire Data
     CheckCache{💾 Recent fire data<br/>already available?}
-    FetchFires[🔥 Get latest wildfire<br/>information from<br/>government databases]
-    UseCache[📋 Use cached<br/>fire data<br/>< 10 minutes old]
-    
+    FetchFires["🔥 Get latest wildfire<br/>information from<br/>government databases"]
+    UseCache["📋 Use cached<br/>fire data<br/>&lt; 10 minutes old"]
+
     %% Step 5: Avoid Areas
-    BuildAvoids[🚫 Create areas to avoid<br/>around active fires<br/>+ road closures]
-    
+    BuildAvoids["🚫 Create areas to avoid<br/>around active fires<br/>+ road closures"]
+
     %% Step 6: Route Calculation
-    CallMaps[🗺️ Calculate safest route<br/>using Azure Maps<br/>avoiding danger zones]
-    
+    CallMaps["🗺️ Calculate safest route<br/>using Azure Maps<br/>avoiding danger zones"]
+
     %% Step 7: Response
-    BuildResponse[📍 Prepare route response<br/>with turn-by-turn directions<br/>and fire zone info]
-    
+    BuildResponse["📍 Prepare route response<br/>with turn-by-turn directions<br/>and fire zone info"]
+
     %% Final Result
-    Success[✅ Return safe route with:<br/>• GPS coordinates<br/>• Driving directions<br/>• Distance & time<br/>• Areas avoided]
-    
-    Error[❌ Return error message<br/>with explanation]
-    
+    Success(["✅ Return safe route with:<br/>• GPS coordinates<br/>• Driving directions<br/>• Distance & time<br/>• Areas avoided"])
+    Error(["❌ Return error message<br/>with explanation"])
+
     %% Flow Connections
     Start --> Agent
     Agent --> Validate
-    
     Validate -->|Yes| BoundingBox
     Validate -->|No| Error
-    
     BoundingBox --> CheckCache
-    
     CheckCache -->|Yes| UseCache
     CheckCache -->|No| FetchFires
-    
     UseCache --> BuildAvoids
     FetchFires --> BuildAvoids
-    
     BuildAvoids --> CallMaps
     CallMaps --> BuildResponse
     BuildResponse --> Success
-    
+
     %% Styling for clarity
-    classDef userAction fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
-    classDef processing fill:#e3f2fd,stroke:#2196f3,stroke-width:2px
-    classDef dataSource fill:#fff3e0,stroke:#ff9800,stroke-width:2px
-    classDef decision fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px
-    classDef result fill:#e8f5e8,stroke:#4caf50,stroke-width:3px
-    classDef error fill:#ffebee,stroke:#f44336,stroke-width:2px
-    
+    classDef userAction fill:#e8f5e8,stroke:#4caf50,stroke-width:2px;
+    classDef processing fill:#e3f2fd,stroke:#2196f3,stroke-width:2px;
+    classDef dataSource fill:#fff3e0,stroke:#ff9800,stroke-width:2px;
+    classDef decision fill:#f3e5f5,stroke:#9c27b0,stroke-width:2px;
+    classDef result fill:#e8f5e8,stroke:#4caf50,stroke-width:3px;
+    classDef error fill:#ffebee,stroke:#f44336,stroke-width:2px;
+
     class Start,Agent userAction
     class BoundingBox,BuildAvoids,CallMaps,BuildResponse processing
     class FetchFires,UseCache dataSource
