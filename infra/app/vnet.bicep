@@ -12,6 +12,27 @@ param appSubnetName string = 'app'
 
 param tags object = {}
 
+// Create Network Security Groups
+module peNSG '../core/security/networksecuritygroup.bicep' = {
+  name: 'pe-nsg'
+  params: {
+    nsgName: '${vNetName}-pe-nsg'
+    location: location
+    tags: tags
+    nsgType: 'privateEndpoint'
+  }
+}
+
+module appNSG '../core/security/networksecuritygroup.bicep' = {
+  name: 'app-nsg'
+  params: {
+    nsgName: '${vNetName}-app-nsg'
+    location: location
+    tags: tags
+    nsgType: 'functionApp'
+  }
+}
+
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   name: vNetName
   location: location
@@ -23,8 +44,8 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
       ]
     }
     encryption: {
-      enabled: false
-      enforcement: 'AllowUnencrypted'
+      enabled: true
+      enforcement: 'DropUnencrypted'
     }
     subnets: [
       {
@@ -34,6 +55,9 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
           addressPrefixes: [
             '10.0.1.0/24'
           ]
+          networkSecurityGroup: {
+            id: peNSG.outputs.nsgId
+          }
           delegations: []
           privateEndpointNetworkPolicies: 'Disabled'
           privateLinkServiceNetworkPolicies: 'Enabled'
@@ -47,6 +71,9 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
           addressPrefixes: [
             '10.0.2.0/24'
           ]
+          networkSecurityGroup: {
+            id: appNSG.outputs.nsgId
+          }
           delegations: [
             {
               name: 'delegation'
@@ -65,7 +92,7 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-05-01' = {
       }
     ]
     virtualNetworkPeerings: []
-    enableDdosProtection: false
+    enableDdosProtection: true
   }
 }
 

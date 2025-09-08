@@ -1,0 +1,311 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "17154410747387990521"
+    }
+  },
+  "parameters": {
+    "vNetName": {
+      "type": "string",
+      "metadata": {
+        "description": "Specifies the name of the virtual network."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Specifies the location."
+      }
+    },
+    "peSubnetName": {
+      "type": "string",
+      "defaultValue": "private-endpoints-subnet",
+      "metadata": {
+        "description": "Specifies the name of the subnet for the Service Bus private endpoint."
+      }
+    },
+    "appSubnetName": {
+      "type": "string",
+      "defaultValue": "app",
+      "metadata": {
+        "description": "Specifies the name of the subnet for Function App virtual network integration."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {}
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('vNetName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.0.0/16"
+          ]
+        },
+        "encryption": {
+          "enabled": true,
+          "enforcement": "DropUnencrypted"
+        },
+        "subnets": [
+          {
+            "name": "[parameters('peSubnetName')]",
+            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), 'private-endpoints-subnet')]",
+            "properties": {
+              "addressPrefixes": [
+                "10.0.1.0/24"
+              ],
+              "networkSecurityGroup": {
+                "id": "[reference(resourceId('Microsoft.Resources/deployments', 'pe-nsg'), '2022-09-01').outputs.nsgId.value]"
+              },
+              "delegations": [],
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          },
+          {
+            "name": "[parameters('appSubnetName')]",
+            "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vNetName'), 'app')]",
+            "properties": {
+              "addressPrefixes": [
+                "10.0.2.0/24"
+              ],
+              "networkSecurityGroup": {
+                "id": "[reference(resourceId('Microsoft.Resources/deployments', 'app-nsg'), '2022-09-01').outputs.nsgId.value]"
+              },
+              "delegations": [
+                {
+                  "name": "delegation",
+                  "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets/delegations', parameters('vNetName'), 'app', 'delegation')]",
+                  "properties": {
+                    "serviceName": "Microsoft.App/environments"
+                  },
+                  "type": "Microsoft.Network/virtualNetworks/subnets/delegations"
+                }
+              ],
+              "privateEndpointNetworkPolicies": "Disabled",
+              "privateLinkServiceNetworkPolicies": "Enabled"
+            },
+            "type": "Microsoft.Network/virtualNetworks/subnets"
+          }
+        ],
+        "virtualNetworkPeerings": [],
+        "enableDdosProtection": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'app-nsg')]",
+        "[resourceId('Microsoft.Resources/deployments', 'pe-nsg')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "pe-nsg",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "nsgName": {
+            "value": "[format('{0}-pe-nsg', parameters('vNetName'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "nsgType": {
+            "value": "privateEndpoint"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "8790282933380368252"
+            }
+          },
+          "parameters": {
+            "nsgName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Network Security Group"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "The location for the resources"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "The tags to apply to the resources"
+              }
+            },
+            "nsgType": {
+              "type": "string",
+              "allowedValues": [
+                "privateEndpoint",
+                "functionApp"
+              ],
+              "metadata": {
+                "description": "The type of NSG to create: privateEndpoint or functionApp"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('nsgName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "securityRules": "[if(equals(parameters('nsgType'), 'functionApp'), createArray(createObject('name', 'AllowHTTPS', 'properties', createObject('protocol', 'Tcp', 'sourcePortRange', '*', 'destinationPortRange', '443', 'sourceAddressPrefix', '*', 'destinationAddressPrefix', '*', 'access', 'Allow', 'priority', 1000, 'direction', 'Inbound', 'description', 'Allow HTTPS traffic')), createObject('name', 'DenyHTTP', 'properties', createObject('protocol', 'Tcp', 'sourcePortRange', '*', 'destinationPortRange', '80', 'sourceAddressPrefix', '*', 'destinationAddressPrefix', '*', 'access', 'Deny', 'priority', 1100, 'direction', 'Inbound', 'description', 'Deny HTTP traffic - enforce HTTPS')), createObject('name', 'AllowVnetInbound', 'properties', createObject('protocol', '*', 'sourcePortRange', '*', 'destinationPortRange', '*', 'sourceAddressPrefix', 'VirtualNetwork', 'destinationAddressPrefix', 'VirtualNetwork', 'access', 'Allow', 'priority', 1200, 'direction', 'Inbound', 'description', 'Allow VNet traffic')), createObject('name', 'AllowAzureLoadBalancer', 'properties', createObject('protocol', '*', 'sourcePortRange', '*', 'destinationPortRange', '*', 'sourceAddressPrefix', 'AzureLoadBalancer', 'destinationAddressPrefix', '*', 'access', 'Allow', 'priority', 1300, 'direction', 'Inbound', 'description', 'Allow Azure Load Balancer')), createObject('name', 'DenyAllInbound', 'properties', createObject('protocol', '*', 'sourcePortRange', '*', 'destinationPortRange', '*', 'sourceAddressPrefix', '*', 'destinationAddressPrefix', '*', 'access', 'Deny', 'priority', 4096, 'direction', 'Inbound', 'description', 'Deny all other inbound traffic'))), createArray(createObject('name', 'AllowPrivateEndpoint', 'properties', createObject('protocol', 'Tcp', 'sourcePortRange', '*', 'destinationPortRange', '443', 'sourceAddressPrefix', 'VirtualNetwork', 'destinationAddressPrefix', 'VirtualNetwork', 'access', 'Allow', 'priority', 1000, 'direction', 'Inbound', 'description', 'Allow private endpoint traffic')), createObject('name', 'DenyAllInbound', 'properties', createObject('protocol', '*', 'sourcePortRange', '*', 'destinationPortRange', '*', 'sourceAddressPrefix', '*', 'destinationAddressPrefix', '*', 'access', 'Deny', 'priority', 4096, 'direction', 'Inbound', 'description', 'Deny all other inbound traffic'))))]"
+              }
+            }
+          ],
+          "outputs": {
+            "nsgId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsgName'))]"
+            },
+            "nsgName": {
+              "type": "string",
+              "value": "[parameters('nsgName')]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "app-nsg",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "nsgName": {
+            "value": "[format('{0}-app-nsg', parameters('vNetName'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "nsgType": {
+            "value": "functionApp"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "8790282933380368252"
+            }
+          },
+          "parameters": {
+            "nsgName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Network Security Group"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "The location for the resources"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "The tags to apply to the resources"
+              }
+            },
+            "nsgType": {
+              "type": "string",
+              "allowedValues": [
+                "privateEndpoint",
+                "functionApp"
+              ],
+              "metadata": {
+                "description": "The type of NSG to create: privateEndpoint or functionApp"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('nsgName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "securityRules": "[if(equals(parameters('nsgType'), 'functionApp'), createArray(createObject('name', 'AllowHTTPS', 'properties', createObject('protocol', 'Tcp', 'sourcePortRange', '*', 'destinationPortRange', '443', 'sourceAddressPrefix', '*', 'destinationAddressPrefix', '*', 'access', 'Allow', 'priority', 1000, 'direction', 'Inbound', 'description', 'Allow HTTPS traffic')), createObject('name', 'DenyHTTP', 'properties', createObject('protocol', 'Tcp', 'sourcePortRange', '*', 'destinationPortRange', '80', 'sourceAddressPrefix', '*', 'destinationAddressPrefix', '*', 'access', 'Deny', 'priority', 1100, 'direction', 'Inbound', 'description', 'Deny HTTP traffic - enforce HTTPS')), createObject('name', 'AllowVnetInbound', 'properties', createObject('protocol', '*', 'sourcePortRange', '*', 'destinationPortRange', '*', 'sourceAddressPrefix', 'VirtualNetwork', 'destinationAddressPrefix', 'VirtualNetwork', 'access', 'Allow', 'priority', 1200, 'direction', 'Inbound', 'description', 'Allow VNet traffic')), createObject('name', 'AllowAzureLoadBalancer', 'properties', createObject('protocol', '*', 'sourcePortRange', '*', 'destinationPortRange', '*', 'sourceAddressPrefix', 'AzureLoadBalancer', 'destinationAddressPrefix', '*', 'access', 'Allow', 'priority', 1300, 'direction', 'Inbound', 'description', 'Allow Azure Load Balancer')), createObject('name', 'DenyAllInbound', 'properties', createObject('protocol', '*', 'sourcePortRange', '*', 'destinationPortRange', '*', 'sourceAddressPrefix', '*', 'destinationAddressPrefix', '*', 'access', 'Deny', 'priority', 4096, 'direction', 'Inbound', 'description', 'Deny all other inbound traffic'))), createArray(createObject('name', 'AllowPrivateEndpoint', 'properties', createObject('protocol', 'Tcp', 'sourcePortRange', '*', 'destinationPortRange', '443', 'sourceAddressPrefix', 'VirtualNetwork', 'destinationAddressPrefix', 'VirtualNetwork', 'access', 'Allow', 'priority', 1000, 'direction', 'Inbound', 'description', 'Allow private endpoint traffic')), createObject('name', 'DenyAllInbound', 'properties', createObject('protocol', '*', 'sourcePortRange', '*', 'destinationPortRange', '*', 'sourceAddressPrefix', '*', 'destinationAddressPrefix', '*', 'access', 'Deny', 'priority', 4096, 'direction', 'Inbound', 'description', 'Deny all other inbound traffic'))))]"
+              }
+            }
+          ],
+          "outputs": {
+            "nsgId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsgName'))]"
+            },
+            "nsgName": {
+              "type": "string",
+              "value": "[parameters('nsgName')]"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "peSubnetName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vNetName')), '2023-05-01').subnets[0].name]"
+    },
+    "peSubnetID": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vNetName')), '2023-05-01').subnets[0].id]"
+    },
+    "appSubnetName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vNetName')), '2023-05-01').subnets[1].name]"
+    },
+    "appSubnetID": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Network/virtualNetworks', parameters('vNetName')), '2023-05-01').subnets[1].id]"
+    }
+  }
+}

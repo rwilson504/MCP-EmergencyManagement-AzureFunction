@@ -44,6 +44,8 @@ resource functions 'Microsoft.Web/sites@2023-12-01' = {
   }
   properties: {
     serverFarmId: appServicePlanId
+    httpsOnly: true
+    clientCertEnabled: true
     functionAppConfig: {
       deployment: {
         storage: {

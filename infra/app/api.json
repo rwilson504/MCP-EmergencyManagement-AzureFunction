@@ -1,0 +1,303 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "16719434755602299954"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {}
+    },
+    "applicationInsightsName": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "appServicePlanId": {
+      "type": "string"
+    },
+    "appSettings": {
+      "type": "object",
+      "defaultValue": {}
+    },
+    "runtimeName": {
+      "type": "string"
+    },
+    "runtimeVersion": {
+      "type": "string"
+    },
+    "serviceName": {
+      "type": "string",
+      "defaultValue": "api"
+    },
+    "storageAccountName": {
+      "type": "string"
+    },
+    "deploymentStorageContainerName": {
+      "type": "string"
+    },
+    "virtualNetworkSubnetId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "instanceMemoryMB": {
+      "type": "int",
+      "defaultValue": 2048
+    },
+    "maximumInstanceCount": {
+      "type": "int",
+      "defaultValue": 100
+    },
+    "identityId": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "identityClientId": {
+      "type": "string",
+      "defaultValue": ""
+    }
+  },
+  "variables": {
+    "applicationInsightsIdentity": "[format('ClientId={0};Authorization=AAD', parameters('identityClientId'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('{0}-functions-module', parameters('serviceName'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[parameters('name')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[union(parameters('tags'), createObject('azd-service-name', parameters('serviceName')))]"
+          },
+          "identityType": {
+            "value": "UserAssigned"
+          },
+          "identityId": {
+            "value": "[parameters('identityId')]"
+          },
+          "appSettings": {
+            "value": "[union(parameters('appSettings'), createObject('AzureWebJobsStorage__clientId', parameters('identityClientId'), 'APPLICATIONINSIGHTS_AUTHENTICATION_STRING', variables('applicationInsightsIdentity')))]"
+          },
+          "applicationInsightsName": {
+            "value": "[parameters('applicationInsightsName')]"
+          },
+          "appServicePlanId": {
+            "value": "[parameters('appServicePlanId')]"
+          },
+          "runtimeName": {
+            "value": "[parameters('runtimeName')]"
+          },
+          "runtimeVersion": {
+            "value": "[parameters('runtimeVersion')]"
+          },
+          "storageAccountName": {
+            "value": "[parameters('storageAccountName')]"
+          },
+          "deploymentStorageContainerName": {
+            "value": "[parameters('deploymentStorageContainerName')]"
+          },
+          "virtualNetworkSubnetId": {
+            "value": "[parameters('virtualNetworkSubnetId')]"
+          },
+          "instanceMemoryMB": {
+            "value": "[parameters('instanceMemoryMB')]"
+          },
+          "maximumInstanceCount": {
+            "value": "[parameters('maximumInstanceCount')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "11235733646052512612"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {}
+            },
+            "applicationInsightsName": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "appServicePlanId": {
+              "type": "string"
+            },
+            "storageAccountName": {
+              "type": "string"
+            },
+            "virtualNetworkSubnetId": {
+              "type": "string",
+              "defaultValue": ""
+            },
+            "identityType": {
+              "type": "string",
+              "allowedValues": [
+                "SystemAssigned",
+                "UserAssigned"
+              ]
+            },
+            "identityId": {
+              "type": "string",
+              "metadata": {
+                "description": "User assigned identity name"
+              }
+            },
+            "runtimeName": {
+              "type": "string",
+              "allowedValues": [
+                "dotnet-isolated",
+                "node",
+                "python",
+                "java",
+                "powershell",
+                "custom"
+              ]
+            },
+            "runtimeVersion": {
+              "type": "string",
+              "allowedValues": [
+                "3.10",
+                "3.11",
+                "7.4",
+                "8.0",
+                "10",
+                "11",
+                "17",
+                "20"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "defaultValue": "functionapp,linux"
+            },
+            "appSettings": {
+              "type": "object",
+              "defaultValue": {}
+            },
+            "instanceMemoryMB": {
+              "type": "int",
+              "defaultValue": 2048
+            },
+            "maximumInstanceCount": {
+              "type": "int",
+              "defaultValue": 100
+            },
+            "deploymentStorageContainerName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/config",
+              "apiVersion": "2023-12-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'appsettings')]",
+              "properties": "[union(parameters('appSettings'), createObject('AzureWebJobsStorage__accountName', parameters('storageAccountName'), 'AzureWebJobsStorage__credential', 'managedidentity', 'APPLICATIONINSIGHTS_CONNECTION_STRING', reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2020-02-02').ConnectionString))]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2023-12-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "[parameters('kind')]",
+              "identity": {
+                "type": "[parameters('identityType')]",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('identityId'))]": {}
+                }
+              },
+              "properties": {
+                "serverFarmId": "[parameters('appServicePlanId')]",
+                "httpsOnly": true,
+                "clientCertEnabled": true,
+                "functionAppConfig": {
+                  "deployment": {
+                    "storage": {
+                      "type": "blobContainer",
+                      "value": "[format('{0}{1}', reference(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2022-09-01').primaryEndpoints.blob, parameters('deploymentStorageContainerName'))]",
+                      "authentication": {
+                        "type": "[if(equals(parameters('identityType'), 'SystemAssigned'), 'SystemAssignedIdentity', 'UserAssignedIdentity')]",
+                        "userAssignedIdentityResourceId": "[if(equals(parameters('identityType'), 'UserAssigned'), parameters('identityId'), '')]"
+                      }
+                    }
+                  },
+                  "scaleAndConcurrency": {
+                    "instanceMemoryMB": "[parameters('instanceMemoryMB')]",
+                    "maximumInstanceCount": "[parameters('maximumInstanceCount')]"
+                  },
+                  "runtime": {
+                    "name": "[parameters('runtimeName')]",
+                    "version": "[parameters('runtimeVersion')]"
+                  }
+                },
+                "virtualNetworkSubnetId": "[if(not(empty(parameters('virtualNetworkSubnetId'))), parameters('virtualNetworkSubnetId'), null())]"
+              }
+            }
+          ],
+          "outputs": {
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "uri": {
+              "type": "string",
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.Web/sites', parameters('name')), '2023-12-01').defaultHostName)]"
+            },
+            "identityPrincipalId": {
+              "type": "string",
+              "value": "[if(equals(parameters('identityType'), 'SystemAssigned'), reference(resourceId('Microsoft.Web/sites', parameters('name')), '2023-12-01', 'full').identity.principalId, '')]"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "SERVICE_API_NAME": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}-functions-module', parameters('serviceName'))), '2022-09-01').outputs.name.value]"
+    },
+    "SERVICE_API_IDENTITY_PRINCIPAL_ID": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}-functions-module', parameters('serviceName'))), '2022-09-01').outputs.identityPrincipalId.value]"
+    }
+  }
+}
