@@ -266,7 +266,7 @@ namespace EmergencyManagementMCP.Services
                 {
                     DistanceMeters = distanceMeters,
                     TravelTimeSeconds = travelTimeSeconds,
-                    PolylineGeoJson = polylineGeoJson,
+                    //PolylineGeoJson = polylineGeoJson,
                     DrivingDirections = drivingDirections.ToArray()
                 };
             }

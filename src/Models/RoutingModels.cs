@@ -59,8 +59,8 @@ namespace EmergencyManagementMCP.Models
         [JsonPropertyName("travelTimeSeconds")]
         public int TravelTimeSeconds { get; set; }
         
-        [JsonPropertyName("polylineGeoJson")]
-        public string PolylineGeoJson { get; set; } = string.Empty;
+        // [JsonPropertyName("polylineGeoJson")]
+        // public string PolylineGeoJson { get; set; } = string.Empty;
         
         [JsonPropertyName("drivingDirections")]
         public DrivingInstruction[] DrivingDirections { get; set; } = Array.Empty<DrivingInstruction>();
