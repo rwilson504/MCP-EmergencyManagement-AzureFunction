@@ -15,6 +15,9 @@ urlFragment: remote-mcp-functions-dotnet
 -->
 
 <!-- Introduction: what this MCP server is dedicated to -->
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/d47999f5-f5e4-4e1b-8ce0-6378ca1812f8" />
+
 ## Introduction
 
 Emergency management requires real-time, intelligent decision-making tools that can adapt to rapidly changing conditions.
