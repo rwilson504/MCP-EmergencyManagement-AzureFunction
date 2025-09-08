@@ -9,7 +9,7 @@ graph TB
     Agent --> MCPClient[📡 MCP Client]
     
     %% MCP Connection
-    MCPClient -->|HTTPS/SSE| FuncApp[⚡ Azure Function App<br/>Emergency Management MCP]
+    MCPClient -->|HTTPS| FuncApp[⚡ Azure Function App<br/>Emergency Management MCP]
     
     %% Azure Function Components
     subgraph "Azure Function App"
