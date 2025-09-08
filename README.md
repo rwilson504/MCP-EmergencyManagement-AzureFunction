@@ -536,6 +536,7 @@ The integration tests cover:
 - **Coordinate Processing**: Bounding box calculations and coordinate transformations
 - **Response Parsing**: JSON response extraction and driving direction processing
 - **Business Logic**: Address fire zone checking and geocoding workflows
+- **Azure Maps Viewer**: Token broker API and route links functionality
 
 ### Test Project Structure
 
@@ -547,8 +548,83 @@ All tests are located in `tests/EmergencyManagementMcp.IntegrationTests/`:
 - **CaliforniaBoundingBoxTest** - Geographic coordinate handling
 - **CoordinateTransformationDebugTest** - Coordinate transformation debugging
 - **StandaloneAddressFireZoneTest** - Model validation and data flow testing
+- **AzureMapsViewerIntegrationTest** - Azure Maps token broker and route links API testing
 
 For more details, see the [test project README](tests/EmergencyManagementMcp.IntegrationTests/README.md).
+
+## Azure Maps Viewer (React SPA)
+
+The repository includes a React-based web application for visualizing emergency management routes produced by the MCP tools. The viewer uses **Azure Maps Web SDK v3** with anonymous authentication backed by a managed identity token broker.
+
+### Key Features
+
+- **No Browser App Registration**: The SPA obtains Azure Maps tokens from the Function App's `/api/maps-token` endpoint using Managed Identity
+- **Short-Link Support**: Create shareable route URLs via `POST /api/routeLinks` 
+- **Query Parameter Fallback**: Direct route visualization using URL parameters
+- **Fire-Aware Route Display**: Renders routes with avoided fire perimeter areas
+- **Secure Token Management**: All Azure Maps authentication handled server-side
+
+### Getting Started
+
+1. **Build the React SPA**:
+   ```bash
+   cd web
+   npm install
+   npm run build
+   ```
+
+2. **Set Environment Variables**:
+   Create `web/.env` with your Azure Maps Client ID:
+   ```
+   VITE_AZURE_MAPS_CLIENT_ID=your-azure-maps-client-id
+   ```
+   The Client ID is available from Azure after deployment via the `Maps__ClientId` app setting.
+
+3. **Development Server**:
+   ```bash
+   cd web
+   npm run dev
+   ```
+   This starts the development server on `http://localhost:3000`.
+
+### Usage
+
+**Short-Link Flow**:
+1. MCP agent calls `POST /api/routeLinks` with a RouteSpec
+2. Returns `{ "id": "abc123", "url": "/view?id=abc123" }`
+3. User opens the URL → authenticates → map renders the route
+
+**Query Parameter Flow** (for small payloads):
+```
+/view?from=-121.4948,38.5816&to=-122.8756,42.3265&avoid=rect(-121.52,38.56,-121.45,38.62)
+```
+
+### Architecture
+
+- **Frontend**: React 18 + TypeScript + Vite + Azure Maps Control v3
+- **Token Broker**: `GET /api/maps-token` using `DefaultAzureCredential`
+- **Route Storage**: `POST/GET /api/routeLinks/{id}` using Azure Blob Storage
+- **Authentication**: Function-level auth + CORS for localhost:3000
+- **Infrastructure**: Bicep templates include all required resources and RBAC
+
+### Data Contract
+
+The RouteSpec format follows GeoJSON conventions:
+```json
+{
+  "type": "FeatureCollection",
+  "features": [
+    { "type":"Feature","geometry":{"type":"Point","coordinates":[-121.4948,38.5816]},"properties":{"pointIndex":0,"pointType":"waypoint"}},
+    { "type":"Feature","geometry":{"type":"Point","coordinates":[-122.8756,42.3265]},"properties":{"pointIndex":1,"pointType":"waypoint"}}
+  ],
+  "travelMode": "driving",
+  "routeOutputOptions": ["routePath"],
+  "avoidAreas": { "type":"MultiPolygon", "coordinates":[ [[[-121.52,38.56],[-121.45,38.56],[-121.45,38.62],[-121.52,38.62],[-121.52,38.56]]] ] },
+  "ttlMinutes": 1440
+}
+```
+
+Coordinates use **[longitude, latitude]** format. The `avoidAreas` field uses MultiPolygon geometry with rectangle rings where the first coordinate equals the last.
 
 ## Clean up resources
 
