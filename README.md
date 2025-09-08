@@ -72,7 +72,7 @@ This is a quickstart template to easily build and deploy a custom remote MCP ser
 **Watch the video overview**
 
 <a href="https://www.youtube.com/watch?v=XwnEtZxaokg">
-  <img src="./images/video-overview.png" alt="Watch the video" width="500" />
+ <img width="800" height="450" alt="image" src="https://github.com/user-attachments/assets/a7174343-4f49-4cd1-ac7f-cfbae21095be" />
 </a>
 
 If you're looking for this sample in more languages check out the [Node.js/TypeScript](https://github.com/Azure-Samples/remote-mcp-functions-typescript) and [Python](https://github.com/Azure-Samples/remote-mcp-functions-python) samples.  
