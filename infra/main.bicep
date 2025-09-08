@@ -124,7 +124,7 @@ module storage './core/storage/storage-account.bicep' = {
     name: !empty(storageAccountName) ? storageAccountName : 'doem${abbrs.storageStorageAccounts}${resourceToken}'
     location: location
     tags: tags
-    containers: [{name: deploymentStorageContainerName}, {name: 'snippets'}, {name: geoCacheContainerName}]
+    containers: [{name: deploymentStorageContainerName}, {name: 'snippets'}, {name: geoCacheContainerName}, {name: 'links'}]
     publicNetworkAccess: vnetEnabled ? 'Disabled' : 'Enabled'
     networkAcls: !vnetEnabled ? {} : {
       defaultAction: 'Deny'

@@ -76,6 +76,22 @@ resource functions 'Microsoft.Web/sites@2023-12-01' = {
         APPLICATIONINSIGHTS_CONNECTION_STRING: applicationInsights.properties.ConnectionString
       })
   }
+
+  resource configWeb 'config' = {
+    name: 'web'
+    properties: {
+      cors: {
+        allowedOrigins: [
+          'http://localhost:3000'
+          'https://localhost:3000'
+          // Additional origins can be added here for production deployments
+        ]
+        supportCredentials: true
+      }
+      use32BitWorkerProcess: false
+      ftpsState: 'Disabled'
+    }
+  }
 }
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = if (!empty(applicationInsightsName)) {

@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace EmergencyManagementMCP.Models
 {
+    // Existing models...
     public class BoundingBox
     {
         public double MinLat { get; set; }
@@ -36,6 +37,83 @@ namespace EmergencyManagementMCP.Models
         }
     }
 
+    // Route Link API models
+    public class RouteSpec
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "FeatureCollection";
+        
+        [JsonPropertyName("features")]
+        public RouteFeature[] Features { get; set; } = Array.Empty<RouteFeature>();
+        
+        [JsonPropertyName("travelMode")]
+        public string TravelMode { get; set; } = "driving";
+        
+        [JsonPropertyName("routeOutputOptions")]
+        public string[] RouteOutputOptions { get; set; } = new[] { "routePath" };
+        
+        [JsonPropertyName("avoidAreas")]
+        public MultiPolygon? AvoidAreas { get; set; }
+        
+        [JsonPropertyName("ttlMinutes")]
+        public int? TtlMinutes { get; set; }
+    }
+
+    public class RouteFeature
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "Feature";
+        
+        [JsonPropertyName("geometry")]
+        public PointGeometry Geometry { get; set; } = new();
+        
+        [JsonPropertyName("properties")]
+        public RouteFeatureProperties Properties { get; set; } = new();
+    }
+
+    public class PointGeometry
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "Point";
+        
+        [JsonPropertyName("coordinates")]
+        public double[] Coordinates { get; set; } = Array.Empty<double>();
+    }
+
+    public class RouteFeatureProperties
+    {
+        [JsonPropertyName("pointIndex")]
+        public int PointIndex { get; set; }
+        
+        [JsonPropertyName("pointType")]
+        public string PointType { get; set; } = "waypoint";
+    }
+
+    public class MultiPolygon
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "MultiPolygon";
+        
+        [JsonPropertyName("coordinates")]
+        public double[][][][] Coordinates { get; set; } = Array.Empty<double[][][]>();
+    }
+
+    public class RouteLink
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+        
+        [JsonPropertyName("url")]
+        public string Url { get; set; } = string.Empty;
+        
+        [JsonPropertyName("createdAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        [JsonPropertyName("expiresAt")]
+        public DateTime? ExpiresAt { get; set; }
+    }
+
+    // Existing routing models continue below...
     public class DrivingInstruction
     {
         [JsonPropertyName("routeOffsetInMeters")]
