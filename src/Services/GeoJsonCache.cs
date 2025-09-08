@@ -16,16 +16,7 @@ namespace EmergencyManagementMCP.Services
         public GeoJsonCache(ILogger<GeoJsonCache> logger, IConfiguration config)
         {
             _logger = logger;
-            _containerName = config["Storage:CacheContainer"] ?? "routing-cache";
-
-            // Log all config values for diagnostics
-            // foreach (var kvp in config.AsEnumerable())
-            // {
-            //     if (!string.IsNullOrEmpty(kvp.Value))
-            //     {
-            //         _logger.LogInformation("Config: {Key} = {Value}", kvp.Key, kvp.Value);
-            //     }
-            // }
+            _containerName = config["Storage:CacheContainer"] ?? "routing-cache";            
 
             var blobServiceUrl = config["Storage:BlobServiceUrl"];
             if (string.IsNullOrEmpty(blobServiceUrl))
