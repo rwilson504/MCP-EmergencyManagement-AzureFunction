@@ -24,7 +24,7 @@ Emergency management requires real-time, intelligent decision-making tools that 
 
 This project demonstrates how an Azure Function MCP server can securely orchestrate emergency management workflows by connecting to multiple Azure resources—including Azure Maps, Azure Storage, Application Insights, and Managed Identity—using Azure's built-in identity and access management. All resource access is performed securely via managed identity, eliminating the need for secrets or connection strings in code.
 
-While many APIs can be exposed directly through API Management (APIM) and MCP for simple scenarios, this solution shows how Azure Functions can deliver more robust, agent-friendly logic: integrating real-time fire data, advanced routing, and caching, all with enterprise-grade security and scalability. This approach is ideal for scenarios where you need to combine multiple data sources, perform complex processing, or enforce custom security and logging requirements.
+While many APIs can be exposed directly through API Management (APIM) and MCP for simple scenarios, this solution shows how Azure Functions can deliver more robust, agent-friendly logic: integrating real-time fire data [Wildland Fire Interagency Geospatial Services](https://wfigs-nifc.hub.arcgis.com/), advanced routing, and caching, all with enterprise-grade security and scalability. This approach is ideal for scenarios where you need to combine multiple data sources, perform complex processing, or enforce custom security and logging requirements.
 
 ---
 
@@ -64,10 +64,6 @@ For business users and non-technical stakeholders, see the [Logical Flow Diagram
 - How fire-aware routing works in simple terms
 - Why this architecture is powerful for emergency management
 - Real-world benefits and use cases
-
-Below is the original architecture diagram for the Remote MCP Server using Azure Functions:
-
-![Architecture Diagram](architecture-diagram.png)
 
 ## Getting Started with Remote MCP Servers using Azure Functions (.NET/C#)
 

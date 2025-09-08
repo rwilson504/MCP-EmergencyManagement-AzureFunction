@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Emergency Management MCP",
-    "description": "Emergency Management MCP that provides tools for emergency repsonders",
+    "description": "Emergency Management MCP that provides tools for emergency responders",
     "version": "1.0.0"
   },
   "host": "your.azure.function.host",
