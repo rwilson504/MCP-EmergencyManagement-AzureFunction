@@ -6,7 +6,7 @@
     "version": "1.0.0"
   },
   "host": "your.azure.function.host",
-  "basePath": "/runtime/webhooks/",
+  "basePath": "/runtime/webhooks",
   "schemes": [ "https" ],  
   "paths": {
     "/mcp": {

@@ -24,11 +24,20 @@ namespace EmergencyManagementMCP.Functions
         {
             var requestId = Guid.NewGuid().ToString("N")[..8];
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            
-            _logger.LogInformation("Serving Swagger JSON request from {RemoteIpAddress}, requestId={RequestId}", 
+
+            _logger.LogInformation("Serving Swagger JSON request from {RemoteIpAddress}, requestId={RequestId}",
                 req.Url.Host, requestId);
 
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "swagger.json");
+            var root = Environment.GetEnvironmentVariable("AzureWebJobsScriptRoot")
+                       ?? Environment.GetEnvironmentVariable("HOME")
+                       ?? Directory.GetCurrentDirectory();
+
+            var filePath = Path.Combine(root, "swagger.json");
+            if (!File.Exists(filePath))
+            {
+                // Try fallback if running locally
+                filePath = Path.Combine(root, "wwwroot", "swagger.json");
+            }
             _logger.LogDebug("Looking for Swagger file at: {FilePath}, requestId={RequestId}", filePath, requestId);
 
             var response = req.CreateResponse();
@@ -37,9 +46,9 @@ namespace EmergencyManagementMCP.Functions
             if (!File.Exists(filePath))
             {
                 stopwatch.Stop();
-                _logger.LogError("Swagger file not found at path: {FilePath}, elapsed={ElapsedMs}ms, requestId={RequestId}", 
+                _logger.LogError("Swagger file not found at path: {FilePath}, elapsed={ElapsedMs}ms, requestId={RequestId}",
                     filePath, stopwatch.ElapsedMilliseconds, requestId);
-                    
+
                 response.StatusCode = HttpStatusCode.NotFound;
                 var errorJson = JsonSerializer.Serialize(new { error = "Swagger file not found.", requestId });
                 await response.WriteStringAsync(errorJson);
@@ -66,26 +75,26 @@ namespace EmergencyManagementMCP.Functions
                     }
 
                     swaggerDoc["host"] = host;
-                    
-                    _logger.LogDebug("Updated Swagger host from '{OriginalHost}' to '{NewHost}', requestId={RequestId}", 
+
+                    _logger.LogDebug("Updated Swagger host from '{OriginalHost}' to '{NewHost}', requestId={RequestId}",
                         originalHost, host, requestId);
                 }
 
                 stopwatch.Stop();
                 response.StatusCode = HttpStatusCode.OK;
                 await response.WriteStringAsync(swaggerDoc?.ToJsonString() ?? json);
-                
-                _logger.LogInformation("Swagger JSON served successfully: {Size} chars, elapsed={ElapsedMs}ms, requestId={RequestId}", 
+
+                _logger.LogInformation("Swagger JSON served successfully: {Size} chars, elapsed={ElapsedMs}ms, requestId={RequestId}",
                     json.Length, stopwatch.ElapsedMilliseconds, requestId);
-                    
+
                 return response;
             }
             catch (JsonException jsonEx)
             {
                 stopwatch.Stop();
-                _logger.LogError(jsonEx, "Failed to parse Swagger JSON file, elapsed={ElapsedMs}ms, requestId={RequestId}", 
+                _logger.LogError(jsonEx, "Failed to parse Swagger JSON file, elapsed={ElapsedMs}ms, requestId={RequestId}",
                     stopwatch.ElapsedMilliseconds, requestId);
-                    
+
                 response.StatusCode = HttpStatusCode.InternalServerError;
                 var errorJson = JsonSerializer.Serialize(new { error = "Invalid Swagger JSON format.", requestId });
                 await response.WriteStringAsync(errorJson);
@@ -94,9 +103,9 @@ namespace EmergencyManagementMCP.Functions
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                _logger.LogError(ex, "Unexpected error serving Swagger JSON, elapsed={ElapsedMs}ms, requestId={RequestId}", 
+                _logger.LogError(ex, "Unexpected error serving Swagger JSON, elapsed={ElapsedMs}ms, requestId={RequestId}",
                     stopwatch.ElapsedMilliseconds, requestId);
-                    
+
                 response.StatusCode = HttpStatusCode.InternalServerError;
                 var errorJson = JsonSerializer.Serialize(new { error = "Internal server error.", requestId });
                 await response.WriteStringAsync(errorJson);
