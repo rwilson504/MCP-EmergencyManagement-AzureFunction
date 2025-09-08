@@ -51,17 +51,22 @@ This document outlines the comprehensive security improvements implemented for t
 ### 4. Comprehensive Security Monitoring
 
 **Diagnostic Settings Framework:**
-- **Centralized Logging**: All security logs flow to Log Analytics workspace
+- **Optional Deployment**: Diagnostic settings can be deployed separately after main infrastructure
+- **Centralized Logging**: All security logs flow to Log Analytics workspace when deployed
 - **Complete Coverage**: Storage Account, Function App, and Application Insights
 - **Retention Policy**: 90-day retention for all security-relevant logs
 - **Security Categories**: Focus on audit logs and security-relevant metrics
 
-**Monitored Resources:**
-- Storage Account transactions and audit logs
-- Function App logs, HTTP logs, and audit logs
-- Application Insights audit and performance data
+**Deployment Instructions:**
+```bash
+# Deploy diagnostic settings after main infrastructure
+az deployment group create \
+  --resource-group your-rg \
+  --template-file infra/diagnostics-deployment.bicep \
+  --parameters @infra/diagnostics.parameters.json
+```
 
-**Location:** `infra/core/monitor/diagnostics.bicep`
+**Location:** `infra/diagnostics-deployment.bicep` (optional deployment)
 
 ### 5. Security Policy Framework
 
@@ -112,13 +117,42 @@ All Resources → Diagnostic Settings → Log Analytics Workspace
 | Security Area | Before | After | Impact |
 |---------------|--------|-------|---------|
 | HTTPS Enforcement | ❌ Missing | ✅ Enforced | High |
+| Client Certificate Auth | ❌ Disabled | ✅ Enabled | High |
 | VNet Encryption | ❌ Disabled | ✅ Enabled | High |
 | DDoS Protection | ❌ Disabled | ✅ Enabled | Medium |
 | Network Segmentation | ❌ No NSGs | ✅ Comprehensive NSGs | High |
-| Security Monitoring | ❌ Limited | ✅ Complete Coverage | High |
 | RBAC Permissions | ⚠️ Over-privileged | ✅ Least Privilege | Medium |
+| Multi-cloud Support | ❌ Hardcoded URLs | ✅ Environment Function | Medium |
 
 **Overall Security Score Improvement: 6/10 → 9/10**
+
+## 🚀 Deployment Instructions
+
+### Core Security Infrastructure
+The main security improvements are deployed with the primary infrastructure:
+
+```bash
+# Deploy main infrastructure with security improvements
+azd provision
+
+# Or using Azure CLI
+az deployment sub create \
+  --location eastus2 \
+  --template-file infra/main.bicep \
+  --parameters environmentName=yourenv location=eastus2
+```
+
+### Optional: Enhanced Monitoring (Post-Deployment)
+To add comprehensive diagnostic settings after deployment:
+
+```bash
+# Update diagnostics.parameters.json with your resource names
+# Then deploy diagnostic settings
+az deployment group create \
+  --resource-group your-resource-group \
+  --template-file infra/diagnostics-deployment.bicep \
+  --parameters @infra/diagnostics.parameters.json
+```
 
 ## ⚠️ Deployment Considerations
 

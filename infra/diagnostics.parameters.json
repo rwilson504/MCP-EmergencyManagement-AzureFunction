@@ -1,0 +1,18 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "value": "YOUR_STORAGE_ACCOUNT_NAME"
+    },
+    "functionAppName": {
+      "value": "YOUR_FUNCTION_APP_NAME"
+    },
+    "applicationInsightsName": {
+      "value": "YOUR_APP_INSIGHTS_NAME"
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/YOUR_SUBSCRIPTION_ID/resourceGroups/YOUR_RG_NAME/providers/Microsoft.OperationalInsights/workspaces/YOUR_WORKSPACE_NAME"
+    }
+  }
+}

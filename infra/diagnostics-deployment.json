@@ -1,0 +1,673 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "2043291011840566039"
+    }
+  },
+  "parameters": {
+    "resourceGroupName": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]",
+      "metadata": {
+        "description": "Resource group name where the resources are deployed"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Storage account name"
+      }
+    },
+    "functionAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "Function app name"
+      }
+    },
+    "applicationInsightsName": {
+      "type": "string",
+      "metadata": {
+        "description": "Application Insights name"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Log Analytics workspace resource ID"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "storageDiagnostics",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "resourceName": {
+            "value": "[parameters('storageAccountName')]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[parameters('logAnalyticsWorkspaceId')]"
+          },
+          "resourceType": {
+            "value": "StorageAccount"
+          },
+          "diagnosticSettingName": {
+            "value": "storage-security-diagnostics"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "11369071798954024516"
+            }
+          },
+          "parameters": {
+            "resourceName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the resource to apply diagnostics to"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the Log Analytics workspace"
+              }
+            },
+            "resourceType": {
+              "type": "string",
+              "allowedValues": [
+                "StorageAccount",
+                "FunctionApp",
+                "ApplicationInsights",
+                "VirtualNetwork"
+              ],
+              "metadata": {
+                "description": "The type of resource to configure diagnostics for"
+              }
+            },
+            "diagnosticSettingName": {
+              "type": "string",
+              "defaultValue": "security-diagnostics",
+              "metadata": {
+                "description": "Diagnostic setting name"
+              }
+            }
+          },
+          "resources": [
+            {
+              "condition": "[equals(parameters('resourceType'), 'StorageAccount')]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('resourceName'))]",
+              "name": "[parameters('diagnosticSettingName')]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "metrics": [
+                  {
+                    "category": "Transaction",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "logs": [
+                  {
+                    "categoryGroup": "audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "condition": "[equals(parameters('resourceType'), 'FunctionApp')]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Web/sites/{0}', parameters('resourceName'))]",
+              "name": "[parameters('diagnosticSettingName')]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "logs": [
+                  {
+                    "category": "FunctionAppLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "AppServiceConsoleLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "AppServiceHTTPLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "AppServiceAuditLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "condition": "[equals(parameters('resourceType'), 'ApplicationInsights')]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Insights/components/{0}', parameters('resourceName'))]",
+              "name": "[parameters('diagnosticSettingName')]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "logs": [
+                  {
+                    "categoryGroup": "audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "diagnosticSettingName": {
+              "type": "string",
+              "value": "[parameters('diagnosticSettingName')]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "functionAppDiagnostics",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "resourceName": {
+            "value": "[parameters('functionAppName')]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[parameters('logAnalyticsWorkspaceId')]"
+          },
+          "resourceType": {
+            "value": "FunctionApp"
+          },
+          "diagnosticSettingName": {
+            "value": "functionapp-security-diagnostics"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "11369071798954024516"
+            }
+          },
+          "parameters": {
+            "resourceName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the resource to apply diagnostics to"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the Log Analytics workspace"
+              }
+            },
+            "resourceType": {
+              "type": "string",
+              "allowedValues": [
+                "StorageAccount",
+                "FunctionApp",
+                "ApplicationInsights",
+                "VirtualNetwork"
+              ],
+              "metadata": {
+                "description": "The type of resource to configure diagnostics for"
+              }
+            },
+            "diagnosticSettingName": {
+              "type": "string",
+              "defaultValue": "security-diagnostics",
+              "metadata": {
+                "description": "Diagnostic setting name"
+              }
+            }
+          },
+          "resources": [
+            {
+              "condition": "[equals(parameters('resourceType'), 'StorageAccount')]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('resourceName'))]",
+              "name": "[parameters('diagnosticSettingName')]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "metrics": [
+                  {
+                    "category": "Transaction",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "logs": [
+                  {
+                    "categoryGroup": "audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "condition": "[equals(parameters('resourceType'), 'FunctionApp')]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Web/sites/{0}', parameters('resourceName'))]",
+              "name": "[parameters('diagnosticSettingName')]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "logs": [
+                  {
+                    "category": "FunctionAppLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "AppServiceConsoleLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "AppServiceHTTPLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "AppServiceAuditLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "condition": "[equals(parameters('resourceType'), 'ApplicationInsights')]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Insights/components/{0}', parameters('resourceName'))]",
+              "name": "[parameters('diagnosticSettingName')]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "logs": [
+                  {
+                    "categoryGroup": "audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "diagnosticSettingName": {
+              "type": "string",
+              "value": "[parameters('diagnosticSettingName')]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "appInsightsDiagnostics",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "resourceName": {
+            "value": "[parameters('applicationInsightsName')]"
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": "[parameters('logAnalyticsWorkspaceId')]"
+          },
+          "resourceType": {
+            "value": "ApplicationInsights"
+          },
+          "diagnosticSettingName": {
+            "value": "appinsights-security-diagnostics"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "11369071798954024516"
+            }
+          },
+          "parameters": {
+            "resourceName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the resource to apply diagnostics to"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the Log Analytics workspace"
+              }
+            },
+            "resourceType": {
+              "type": "string",
+              "allowedValues": [
+                "StorageAccount",
+                "FunctionApp",
+                "ApplicationInsights",
+                "VirtualNetwork"
+              ],
+              "metadata": {
+                "description": "The type of resource to configure diagnostics for"
+              }
+            },
+            "diagnosticSettingName": {
+              "type": "string",
+              "defaultValue": "security-diagnostics",
+              "metadata": {
+                "description": "Diagnostic setting name"
+              }
+            }
+          },
+          "resources": [
+            {
+              "condition": "[equals(parameters('resourceType'), 'StorageAccount')]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', parameters('resourceName'))]",
+              "name": "[parameters('diagnosticSettingName')]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "metrics": [
+                  {
+                    "category": "Transaction",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "logs": [
+                  {
+                    "categoryGroup": "audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "condition": "[equals(parameters('resourceType'), 'FunctionApp')]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Web/sites/{0}', parameters('resourceName'))]",
+              "name": "[parameters('diagnosticSettingName')]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "logs": [
+                  {
+                    "category": "FunctionAppLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "AppServiceConsoleLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "AppServiceHTTPLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "category": "AppServiceAuditLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "condition": "[equals(parameters('resourceType'), 'ApplicationInsights')]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Insights/components/{0}', parameters('resourceName'))]",
+              "name": "[parameters('diagnosticSettingName')]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ],
+                "logs": [
+                  {
+                    "categoryGroup": "audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  },
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 90
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "diagnosticSettingName": {
+              "type": "string",
+              "value": "[parameters('diagnosticSettingName')]"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "deploymentComplete": {
+      "type": "bool",
+      "value": true
+    }
+  }
+}
