@@ -42,7 +42,7 @@ param staticWebAppName string = ''
 
 @description('Static Web App SKU')
 @allowed(['Free', 'Standard'])
-param staticWebAppSku string = 'Free'
+param staticWebAppSku string = 'Standard'
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
@@ -106,7 +106,7 @@ module staticWebApp 'core/host/staticwebapp.bicep' = {
   scope: rg
   params: {
     name: finalStaticWebAppName
-    location: 'eastus2' // SWA requires specific regions with broader Free tier support
+    location: location // Use same region as other resources
     sku: staticWebAppSku
     tags: tags
     functionAppResourceId: api.outputs.SERVICE_API_RESOURCE_ID

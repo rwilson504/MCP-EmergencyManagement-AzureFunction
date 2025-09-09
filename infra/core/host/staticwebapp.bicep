@@ -2,11 +2,11 @@
 param name string
 
 @description('Location for the Static Web App')
-param location string = 'eastus2'
+param location string
 
 @description('SKU for the Static Web App')
 @allowed(['Free', 'Standard'])
-param sku string = 'Free'
+param sku string = 'Standard'
 
 @description('Tags to apply to the Static Web App')
 param tags object = {}
