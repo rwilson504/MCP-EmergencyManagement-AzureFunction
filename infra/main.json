@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "2499058941993681162"
+      "templateHash": "4710324093893005110"
     }
   },
   "parameters": {
@@ -958,6 +958,9 @@
           },
           "linuxFxVersion": {
             "value": "[parameters('linuxFxVersion')]"
+          },
+          "serviceName": {
+            "value": "web"
           }
         },
         "template": {
@@ -967,7 +970,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "13545190295840977620"
+              "templateHash": "13638381609448830952"
             }
           },
           "parameters": {
@@ -1002,6 +1005,13 @@
               "metadata": {
                 "description": "Runtime stack for the web app"
               }
+            },
+            "serviceName": {
+              "type": "string",
+              "defaultValue": "web",
+              "metadata": {
+                "description": "Service name for AZD tagging"
+              }
             }
           },
           "resources": [
@@ -1010,13 +1020,12 @@
               "apiVersion": "2023-12-01",
               "name": "[parameters('name')]",
               "location": "[parameters('location')]",
-              "tags": "[parameters('tags')]",
+              "tags": "[union(parameters('tags'), createObject('azd-service-name', parameters('serviceName')))]",
               "kind": "app,linux",
               "properties": {
                 "serverFarmId": "[parameters('appServicePlanId')]",
                 "siteConfig": {
                   "linuxFxVersion": "[parameters('linuxFxVersion')]",
-                  "alwaysOn": true,
                   "ftpsState": "FtpsOnly",
                   "minTlsVersion": "1.2",
                   "scmMinTlsVersion": "1.2",

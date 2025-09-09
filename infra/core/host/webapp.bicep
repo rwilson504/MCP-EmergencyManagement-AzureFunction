@@ -13,10 +13,13 @@ param tags object = {}
 @description('Runtime stack for the web app')
 param linuxFxVersion string = 'NODE|18-lts'
 
+@description('Service name for AZD tagging')
+param serviceName string = 'web'
+
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   name: name
   location: location
-  tags: tags
+  tags: union(tags, { 'azd-service-name': serviceName })
   kind: 'app,linux'
   properties: {
     serverFarmId: appServicePlanId

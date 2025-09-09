@@ -137,6 +137,7 @@ module webApp 'core/host/webapp.bicep' = {
     appServicePlanId: appServicePlan.outputs.id
     tags: tags
     linuxFxVersion: linuxFxVersion
+    serviceName: 'web'
   }
 }
 
