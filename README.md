@@ -307,16 +307,19 @@ The deployment includes the following Azure resources for emergency management c
   - Function deployment packages
   - Code snippets storage
   - **Geo cache container** - Caches wildfire perimeter GeoJSON data with TTL
+  - **Links container** - Stores shareable route link data for the web viewer
 - **Azure Maps Account** - Provides routing services for fire-aware route calculations
+- **Azure Static Web App** - Hosts the React frontend for visualizing emergency routes
 - **Application Insights** - Monitoring and logging for the MCP server
 - **Managed Identity** - Secure access between services without storing credentials
 
 **Configuration:**
 
 The deployment automatically configures:
-- Blob storage container (`routing-cache`) for geographic data caching
-- Azure Maps integration with primary key injection
-- Managed Identity with appropriate RBAC permissions
+- Blob storage containers (`routing-cache`, `links`) for geographic data caching and route sharing
+- Azure Maps integration with Managed Identity authentication
+- Static Web App integration with Azure Functions for secure API access
+- Managed Identity with appropriate RBAC permissions for Maps and Storage
 - Fire perimeter data source (ArcGIS/NIFC) endpoints
 
 You can opt-in to a VNet being used in the sample. To do so, do this before `azd up`

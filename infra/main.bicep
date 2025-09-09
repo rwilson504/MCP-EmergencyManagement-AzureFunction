@@ -36,11 +36,22 @@ param mapsSku string = 'G2'
 @description('Geo cache container name')
 param geoCacheContainerName string = 'routing-cache'
 
+// Static Web App Parameters
+@description('Static Web App name (must be globally unique)')
+param staticWebAppName string = ''
+
+@description('Static Web App SKU')
+@allowed(['Free', 'Standard'])
+param staticWebAppSku string = 'Free'
+
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var tags = { 'azd-env-name': environmentName }
 var functionAppName = !empty(apiServiceName) ? apiServiceName : 'doem-${abbrs.webSitesFunctions}api-${resourceToken}'
 var deploymentStorageContainerName = 'app-package-${take(functionAppName, 32)}-${take(toLower(uniqueString(functionAppName, resourceToken)), 7)}'
+
+// Static Web App name with fallback
+var finalStaticWebAppName = !empty(staticWebAppName) ? staticWebAppName : 'doem-${abbrs.webStaticSites}${resourceToken}'
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -86,6 +97,19 @@ module maps 'core/security/maps.bicep' = {
     location: location
     sku: mapsSku
     tags: tags
+  }
+}
+
+// Static Web App for hosting React frontend
+module staticWebApp 'core/host/staticwebapp.bicep' = {
+  name: 'staticwebapp'
+  scope: rg
+  params: {
+    name: finalStaticWebAppName
+    location: 'centralus' // SWA has limited region availability
+    sku: staticWebAppSku
+    tags: tags
+    functionAppName: api.outputs.SERVICE_API_NAME
   }
 }
 
@@ -226,3 +250,5 @@ output SERVICE_API_NAME string = api.outputs.SERVICE_API_NAME
 output AZURE_FUNCTION_NAME string = api.outputs.SERVICE_API_NAME
 output AZURE_MAPS_ACCOUNT_NAME string = maps.outputs.name
 output GEO_CACHE_CONTAINER_URI string = 'https://${storage.outputs.name}.blob.core.windows.net/${geoCacheContainerName}'
+output STATIC_WEB_APP_NAME string = staticWebApp.outputs.staticWebAppName
+output STATIC_WEB_APP_URL string = 'https://${staticWebApp.outputs.defaultHostname}'

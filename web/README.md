@@ -20,6 +20,7 @@ This directory contains a React TypeScript single-page application (SPA) for vis
    Copy `.env.example` to `.env` and configure:
    ```
    VITE_AZURE_MAPS_CLIENT_ID=your-azure-maps-client-id
+   VITE_API_BASE_URL=http://localhost:7071/api
    ```
 
 3. **Start Development Server**:
@@ -34,7 +35,32 @@ This directory contains a React TypeScript single-page application (SPA) for vis
 
 ## Deployment
 
-The built application (in `dist/`) can be served from:
+The application is deployed as an Azure Static Web App through the Bicep infrastructure templates. The deployment process:
+
+1. **Infrastructure Provisioning**:
+   ```bash
+   azd provision
+   ```
+   This creates:
+   - Azure Static Web App for hosting the React SPA
+   - Azure Functions for the API backend  
+   - Integration between Static Web App and Functions
+
+2. **Application Deployment**:
+   ```bash
+   azd deploy
+   ```
+   This deploys both the React frontend and Azure Functions backend.
+
+3. **Accessing the Application**:
+   After deployment, the Static Web App URL will be available in the Azure portal or via:
+   ```bash
+   azd show
+   ```
+
+### Manual Deployment Options
+
+If deploying outside of AZD, the built application (in `dist/`) can be served from:
 - Azure Static Web Apps
 - Azure App Service
 - Any static hosting service with Easy Auth or equivalent
