@@ -27,6 +27,9 @@ param instanceMemoryMB int = 2048
 param maximumInstanceCount int = 100
 param deploymentStorageContainerName string
 
+@description('Additional allowed origins for CORS (e.g., web app domain)')
+param additionalCorsOrigins array = []
+
 resource stg 'Microsoft.Storage/storageAccounts@2022-09-01' existing = {
   name: storageAccountName
 }
@@ -76,6 +79,21 @@ resource functions 'Microsoft.Web/sites@2023-12-01' = {
         APPLICATIONINSIGHTS_CONNECTION_STRING: applicationInsights.properties.ConnectionString
       })
   }
+
+  resource configWeb 'config' = {
+    name: 'web'
+    properties: {
+      cors: {
+        allowedOrigins: union([
+          'http://localhost:3000'
+          'https://localhost:3000'
+        ], additionalCorsOrigins)
+        supportCredentials: true
+      }
+      use32BitWorkerProcess: false
+      ftpsState: 'Disabled'
+    }
+  }
 }
 
 resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing = if (!empty(applicationInsightsName)) {
@@ -85,3 +103,4 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing
 output name string = functions.name
 output uri string = 'https://${functions.properties.defaultHostName}'
 output identityPrincipalId string = identityType == 'SystemAssigned' ? functions.identity.principalId : ''
+output resourceId string = functions.id

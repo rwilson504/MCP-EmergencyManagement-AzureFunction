@@ -8,3 +8,9 @@ services:
     host: function
     resourceGroup: doem-rg-raw-dev
     region: eastus
+  web:
+    project: ./web/
+    language: js
+    host: appservice
+    dist: dist
+    resourceGroup: doem-rg-raw-dev
