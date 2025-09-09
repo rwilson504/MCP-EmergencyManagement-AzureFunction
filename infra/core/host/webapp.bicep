@@ -11,7 +11,10 @@ param appServicePlanId string
 param tags object = {}
 
 @description('Runtime stack for the web app')
-param linuxFxVersion string = 'NODE|18-lts'
+param linuxFxVersion string = 'NODE|22-lts'
+
+@description('Node.js version used for App Service environment (WEBSITE_NODE_DEFAULT_VERSION / APP_NODE_VERSION).')
+param nodeVersion string = '22.11.0'
 
 @description('Service name for AZD tagging')
 param serviceName string = 'web'
@@ -35,7 +38,13 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
       appSettings: [
         {
           name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          value: '18.19.0'
+          // Pin the exact Node.js version used by the build toolchain at deploy time
+          value: nodeVersion
+        }
+        {
+          name: 'APP_NODE_VERSION'
+          // Exposed for diagnostics & frontend to display expected runtime
+          value: nodeVersion
         }
         {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
