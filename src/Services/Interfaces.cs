@@ -25,6 +25,20 @@ namespace EmergencyManagementMCP.Services
         Task<RouteResult> GetRouteAsync(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas, DateTime? departAt = null);
     }
 
+    public interface IRouteLinkService
+    {
+        /// <summary>
+        /// Creates (or reuses deterministically) a shareable route link artifact given core inputs.
+        /// </summary>
+        /// <param name="origin">Origin coordinate</param>
+        /// <param name="destination">Destination coordinate</param>
+        /// <param name="appliedAvoids">Applied avoid rectangles (string form)</param>
+        /// <param name="ttl">Time to live (null for default)</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>RouteLink with id + URL</returns>
+        Task<RouteLink> CreateAsync(Coordinate origin, Coordinate destination, IEnumerable<string> appliedAvoids, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
+    }
+
     public interface IGeocodingClient
     {
         Task<GeocodingResult> GeocodeAddressAsync(string address);

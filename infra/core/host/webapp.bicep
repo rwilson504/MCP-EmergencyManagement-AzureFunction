@@ -25,6 +25,9 @@ param applicationInsightsConnectionString string = ''
 @description('Optional Log Analytics Workspace Resource ID to send platform & application logs.')
 param logAnalyticsWorkspaceId string = ''
 
+@description('Optional user-assigned managed identity resource ID to attach to the Web App.')
+param userAssignedIdentityId string = ''
+
 // NOTE: Simpler explicit array (leaves empty AI connection string if not provided)
 
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
@@ -32,6 +35,12 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   location: location
   tags: union(tags, { 'azd-service-name': serviceName })
   kind: 'app,linux'
+  identity: !empty(userAssignedIdentityId) ? {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentityId}': {}
+    }
+  } : null
   properties: {
     serverFarmId: appServicePlanId
     siteConfig: {

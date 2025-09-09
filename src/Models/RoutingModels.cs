@@ -154,6 +154,12 @@ namespace EmergencyManagementMCP.Models
         
         [JsonPropertyName("traceId")]
         public string TraceId { get; set; } = string.Empty;
+
+        [JsonPropertyName("shareLink")] 
+        public RouteLink? ShareLink { get; set; }
+
+        [JsonPropertyName("envelope")]
+        public ResponseEnvelope Envelope { get; set; } = new();
     }
 
     public class GeocodingResult
@@ -232,5 +238,26 @@ namespace EmergencyManagementMCP.Models
         
         [JsonPropertyName("traceId")]
         public string TraceId { get; set; } = string.Empty;
+
+        [JsonPropertyName("shareLink")]
+        public RouteLink? ShareLink { get; set; }
+
+        [JsonPropertyName("envelope")]
+        public ResponseEnvelope Envelope { get; set; } = new();
+    }
+
+    public class ResponseEnvelope
+    {
+        [JsonPropertyName("toolVersion")]
+        public string ToolVersion { get; set; } = "1.0.0";
+
+        [JsonPropertyName("generatedAtUtc")]
+        public DateTime GeneratedAtUtc { get; set; } = DateTime.UtcNow;
+
+        [JsonPropertyName("latencyMs")]
+        public long LatencyMs { get; set; }
+
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = "ok";
     }
 }

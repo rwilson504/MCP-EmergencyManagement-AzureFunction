@@ -13,6 +13,7 @@ namespace EmergencyManagementMCP.Tools
         private readonly IGeoJsonCache _geoJsonCache;
         private readonly IGeometryUtils _geometryUtils;
         private readonly IRouterClient _routerClient;
+    private readonly IRouteLinkService _routeLinkService;
         private readonly ILogger<AddressRoutingFireAwareShortestTool> _logger;
 
         public AddressRoutingFireAwareShortestTool(
@@ -21,6 +22,7 @@ namespace EmergencyManagementMCP.Tools
             IGeoJsonCache geoJsonCache,
             IGeometryUtils geometryUtils,
             IRouterClient routerClient,
+            IRouteLinkService routeLinkService,
             ILogger<AddressRoutingFireAwareShortestTool> logger)
         {
             _geocodingClient = geocodingClient;
@@ -28,6 +30,7 @@ namespace EmergencyManagementMCP.Tools
             _geoJsonCache = geoJsonCache;
             _geometryUtils = geometryUtils;
             _routerClient = routerClient;
+            _routeLinkService = routeLinkService;
             _logger = logger;
         }
 
@@ -38,7 +41,9 @@ namespace EmergencyManagementMCP.Tools
             [McpToolProperty(AddressRoutingFireAwareShortestToolPropertyStrings.DestinationAddressName, AddressRoutingFireAwareShortestToolPropertyStrings.DestinationAddressType, AddressRoutingFireAwareShortestToolPropertyStrings.DestinationAddressDescription, Required = true)] string destinationAddress,
             [McpToolProperty(AddressRoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersName, AddressRoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersType, AddressRoutingFireAwareShortestToolPropertyStrings.AvoidBufferMetersDescription, Required = false)] double? avoidBufferMeters,
             [McpToolProperty(AddressRoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcName, AddressRoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcType, AddressRoutingFireAwareShortestToolPropertyStrings.DepartAtIsoUtcDescription, Required = false)] string? departAtIsoUtc,
-            [McpToolProperty(AddressRoutingFireAwareShortestToolPropertyStrings.ProfileName, AddressRoutingFireAwareShortestToolPropertyStrings.ProfileType, AddressRoutingFireAwareShortestToolPropertyStrings.ProfileDescription, Required = false)] string? profile
+            [McpToolProperty(AddressRoutingFireAwareShortestToolPropertyStrings.ProfileName, AddressRoutingFireAwareShortestToolPropertyStrings.ProfileType, AddressRoutingFireAwareShortestToolPropertyStrings.ProfileDescription, Required = false)] string? profile,
+            [McpToolProperty(AddressRoutingFireAwareShortestToolPropertyStrings.PersistShareLinkName, AddressRoutingFireAwareShortestToolPropertyStrings.PersistShareLinkType, AddressRoutingFireAwareShortestToolPropertyStrings.PersistShareLinkDescription, Required = false)] bool? persistShareLink,
+            [McpToolProperty(AddressRoutingFireAwareShortestToolPropertyStrings.ShareLinkTtlMinutesName, AddressRoutingFireAwareShortestToolPropertyStrings.ShareLinkTtlMinutesType, AddressRoutingFireAwareShortestToolPropertyStrings.ShareLinkTtlMinutesDescription, Required = false)] int? shareLinkTtlMinutes
         )
         {
             var traceId = Guid.NewGuid().ToString("N")[..8];
@@ -172,13 +177,38 @@ namespace EmergencyManagementMCP.Tools
                     stepStopwatch.ElapsedMilliseconds, traceId);
 
                 // Step 10: Build response
+                var appliedAvoidsArr = avoidRectangles.Select(r => r.ToString()).ToArray();
+                RouteLink? shareLink = null;
+                if (persistShareLink == true)
+                {
+                    try
+                    {
+                        var ttl = (shareLinkTtlMinutes.HasValue && shareLinkTtlMinutes.Value > 0)
+                            ? TimeSpan.FromMinutes(shareLinkTtlMinutes.Value)
+                            : (TimeSpan?)null;
+                        shareLink = await _routeLinkService.CreateAsync(origin, destination, appliedAvoidsArr, ttl);
+                    }
+                    catch (Exception linkEx)
+                    {
+                        _logger.LogWarning(linkEx, "Failed to create share link (address tool), continuing without it. traceId={TraceId}", traceId);
+                    }
+                }
+
                 var response = new AddressRouteResponse
                 {
                     OriginGeocoding = originGeocodingResult,
                     DestinationGeocoding = destinationGeocodingResult,
                     Route = route,
-                    AppliedAvoids = avoidRectangles.Select(r => r.ToString()).ToArray(),
-                    TraceId = traceId
+                    AppliedAvoids = appliedAvoidsArr,
+                    TraceId = traceId,
+                    ShareLink = shareLink,
+                    Envelope = new ResponseEnvelope
+                    {
+                        GeneratedAtUtc = DateTime.UtcNow,
+                        LatencyMs = stopwatch.ElapsedMilliseconds,
+                        Status = "ok",
+                        ToolVersion = "1.1.0"
+                    }
                 };
 
                 stopwatch.Stop();
@@ -194,11 +224,11 @@ namespace EmergencyManagementMCP.Tools
                     stopwatch.ElapsedMilliseconds, traceId);
                 
                 // Return error response
-                return CreateErrorResponse($"Route calculation failed: {ex.Message}", traceId);
+                return CreateErrorResponse($"Route calculation failed: {ex.Message}", traceId, stopwatch.ElapsedMilliseconds);
             }
         }
 
-        private static object CreateErrorResponse(string errorMessage, string traceId)
+        private static object CreateErrorResponse(string errorMessage, string traceId, long? latencyMs = null)
         {
             return new AddressRouteResponse
             {
@@ -224,7 +254,15 @@ namespace EmergencyManagementMCP.Tools
                     DrivingDirections = Array.Empty<DrivingInstruction>()
                 },
                 AppliedAvoids = new[] { $"ERROR: {errorMessage}" },
-                TraceId = traceId
+                TraceId = traceId,
+                ShareLink = null,
+                Envelope = new ResponseEnvelope
+                {
+                    GeneratedAtUtc = DateTime.UtcNow,
+                    LatencyMs = latencyMs ?? 0,
+                    Status = "error",
+                    ToolVersion = "1.1.0"
+                }
             };
         }
 

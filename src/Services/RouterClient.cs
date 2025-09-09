@@ -24,7 +24,9 @@ namespace EmergencyManagementMCP.Services
             _mapsClientId = config["Maps:ClientId"];
             
             // Use ManagedIdentityCredential with specific client ID for Azure Functions
-            var managedIdentityClientId = config["AzureWebJobsStorage:clientId"];
+            var managedIdentityClientId = config["ManagedIdentity:ClientId"]
+                ?? config["ManagedIdentity__ClientId"]
+                ?? config["AzureWebJobsStorage:clientId"]; // backward compatibility
             if (!string.IsNullOrEmpty(managedIdentityClientId))
             {
                 _logger.LogDebug("Using ManagedIdentityCredential with client ID: {ClientId}", managedIdentityClientId);

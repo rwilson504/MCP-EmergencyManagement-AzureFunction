@@ -147,6 +147,7 @@ module api './app/api.bicep' = {
       Maps__RouteBase: 'https://atlas.microsoft.com'
       Maps__SearchBase: 'https://atlas.microsoft.com'
       Maps__ClientId: maps.outputs.clientId
+      ManagedIdentity__ClientId: apiUserAssignedIdentity.outputs.identityClientId
     }
     virtualNetworkSubnetId: appSubnetId
   }
@@ -166,6 +167,7 @@ module webApp 'core/host/webapp.bicep' = {
     serviceName: 'web'
     applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
+    userAssignedIdentityId: apiUserAssignedIdentity.outputs.identityId
   }
 }
 

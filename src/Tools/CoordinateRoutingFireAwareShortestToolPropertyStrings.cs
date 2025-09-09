@@ -29,5 +29,13 @@ namespace EmergencyManagementMCP.Tools
         public const string ProfileName = "Profile";
         public const string ProfileType = "string";
         public const string ProfileDescription = "Routing profile (e.g., driving, walking). Default is driving.";
+
+        public const string PersistShareLinkName = "PersistShareLink";
+        public const string PersistShareLinkType = "boolean";
+        public const string PersistShareLinkDescription = "If true, create a shareable link artifact for this route (stored in blob).";
+
+        public const string ShareLinkTtlMinutesName = "ShareLinkTtlMinutes";
+        public const string ShareLinkTtlMinutesType = "int";
+        public const string ShareLinkTtlMinutesDescription = "Optional TTL in minutes for the share link (default 1440 = 24h).";
     }
 }
