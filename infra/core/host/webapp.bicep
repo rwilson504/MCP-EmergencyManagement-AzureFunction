@@ -19,6 +19,14 @@ param nodeVersion string = '22.11.0'
 @description('Service name for AZD tagging')
 param serviceName string = 'web'
 
+@description('Optional Application Insights connection string to enable client/server telemetry correlation.')
+param applicationInsightsConnectionString string = ''
+
+@description('Optional Log Analytics Workspace Resource ID to send platform & application logs.')
+param logAnalyticsWorkspaceId string = ''
+
+// NOTE: Simpler explicit array (leaves empty AI connection string if not provided)
+
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   name: name
   location: location
@@ -34,21 +42,28 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
       use32BitWorkerProcess: false
       webSocketsEnabled: false
       managedPipelineMode: 'Integrated'
-      // Configure for serving static React SPA files
+      // Configure app settings (runtime + optional App Insights + deployment behavior)
       appSettings: [
         {
           name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          // Pin the exact Node.js version used by the build toolchain at deploy time
           value: nodeVersion
         }
         {
           name: 'APP_NODE_VERSION'
-          // Exposed for diagnostics & frontend to display expected runtime
           value: nodeVersion
         }
         {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: applicationInsightsConnectionString
+        }
+        {
+          // Legacy instrumentation key for portal "Application Insights: On" badge (extracted from connection string if present)
+          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: empty(applicationInsightsConnectionString) ? '' : split(split(applicationInsightsConnectionString, ';')[0], '=')[1]
+        }
+        {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          value: 'false' // We pre-build the React app
+          value: 'false'
         }
         {
           name: 'WEBSITE_RUN_FROM_PACKAGE'
@@ -62,6 +77,59 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     }
     httpsOnly: true
     clientAffinityEnabled: false
+  }
+}
+
+// Diagnostic settings to route Web App logs & metrics to Log Analytics (if workspace provided)
+resource webAppDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (!empty(logAnalyticsWorkspaceId)) {
+  name: 'webapp-logs'
+  scope: webApp
+  properties: {
+    workspaceId: logAnalyticsWorkspaceId
+    logs: [
+      {
+        category: 'AppServiceHTTPLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+      {
+        category: 'AppServiceConsoleLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+      {
+        category: 'AppServiceAppLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+      {
+        category: 'AppServicePlatformLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
   }
 }
 

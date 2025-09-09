@@ -54,6 +54,11 @@ var deploymentStorageContainerName = 'app-package-${take(functionAppName, 32)}-$
 // Web App name with fallback
 var finalWebAppName = !empty(webAppName) ? webAppName : 'doem-${abbrs.webSitesAppService}${resourceToken}'
 
+// Safe optional network output variables (avoid direct conditional module dereference in parameters)
+// Defer referencing optional module outputs until after conditional creation
+var appSubnetId = vnetEnabled ? serviceVirtualNetwork.outputs.appSubnetID : ''
+var peSubnetName = vnetEnabled ? serviceVirtualNetwork.outputs.peSubnetName : ''
+
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   name: !empty(resourceGroupName) ? resourceGroupName : 'doem-${abbrs.resourcesResourceGroups}${environmentName}'
@@ -143,8 +148,7 @@ module api './app/api.bicep' = {
       Maps__SearchBase: 'https://atlas.microsoft.com'
       Maps__ClientId: maps.outputs.clientId
     }
-  // Guard optional module reference (module only exists when vnetEnabled=true)
-  virtualNetworkSubnetId: vnetEnabled ? serviceVirtualNetwork.outputs.appSubnetID : ''
+    virtualNetworkSubnetId: appSubnetId
   }
 }
 
@@ -160,6 +164,8 @@ module webApp 'core/host/webapp.bicep' = {
     tags: tags
     linuxFxVersion: linuxFxVersion
     serviceName: 'web'
+    applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
+    logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
   }
 }
 
@@ -232,7 +238,7 @@ module storagePrivateEndpoint 'app/storage-PrivateEndpoint.bicep' = if (vnetEnab
     location: location
     tags: tags
     virtualNetworkName: !empty(vNetName) ? vNetName : 'doem-${abbrs.networkVirtualNetworks}${resourceToken}'
-  subnetName: vnetEnabled ? serviceVirtualNetwork.outputs.peSubnetName : ''
+    subnetName: peSubnetName
     resourceName: storage.outputs.name
   }
 }

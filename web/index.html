@@ -5,6 +5,29 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Emergency Management Maps Viewer</title>
+    <!-- Application Insights Browser SDK (lightweight snippet). Connection string will be injected via build or falls back to window.__APPINSIGHTS_CONNECTION_STRING__ if set by server config. -->
+    <script>
+      (function(){
+        const cs = window.__APPINSIGHTS_CONNECTION_STRING__ || '';
+        if(!cs){ console.debug('App Insights connection string not present; client telemetry disabled.'); return; }
+        // Minimal loader for AI JS SDK
+        (function(cfg){
+          var d=window,aiName=cfg.name,script=d[aiName]=d[aiName]||{queue:[],version:2};
+          function r(f){script.queue.push(f)};
+          script.trackPageView=function(e){r(function(){script.appInsights.trackPageView(e)})};
+          var t=document.createElement('script');
+          t.src='https://js.monitor.azure.com/scripts/b/ai.3.gbl.min.js';
+          t.onload=function(){
+            try{script.appInsights=new Microsoft.ApplicationInsights.ApplicationInsights({connectionString:cs});
+              script.appInsights.loadAppInsights();
+              script.appInsights.trackPageView();
+              console.info('Application Insights client telemetry initialized.');
+            }catch(e){console.warn('AI init failed',e)}
+          };
+          document.head.appendChild(t);
+        })({name:'appInsightsLoader'});
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
