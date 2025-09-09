@@ -13,3 +13,4 @@ services:
     language: js
     host: appservice
     dist: dist
+    resourceGroup: doem-rg-raw-dev
