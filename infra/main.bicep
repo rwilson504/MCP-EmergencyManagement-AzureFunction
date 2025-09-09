@@ -109,7 +109,7 @@ module staticWebApp 'core/host/staticwebapp.bicep' = {
     location: 'centralus' // SWA has limited region availability
     sku: staticWebAppSku
     tags: tags
-    functionAppName: api.outputs.SERVICE_API_NAME
+    functionAppResourceId: api.outputs.SERVICE_API_RESOURCE_ID
   }
 }
 

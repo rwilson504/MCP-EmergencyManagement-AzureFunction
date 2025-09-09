@@ -11,8 +11,8 @@ param sku string = 'Free'
 @description('Tags to apply to the Static Web App')
 param tags object = {}
 
-@description('Function App name for API backend integration')
-param functionAppName string = ''
+@description('Function App resource ID for API backend integration')
+param functionAppResourceId string = ''
 
 @description('Custom domain for the Static Web App (optional)')
 param customDomain string = ''
@@ -51,11 +51,11 @@ resource customDomainResource 'Microsoft.Web/staticSites/customDomains@2023-01-0
 }
 
 // Configure Function App backend integration
-resource functionIntegration 'Microsoft.Web/staticSites/linkedBackends@2023-01-01' = if (!empty(functionAppName)) {
+resource functionIntegration 'Microsoft.Web/staticSites/linkedBackends@2023-01-01' = if (!empty(functionAppResourceId)) {
   parent: staticWebApp
   name: 'functionBackend'
   properties: {
-    backendResourceId: functionAppName
+    backendResourceId: functionAppResourceId
     region: location
   }
 }
