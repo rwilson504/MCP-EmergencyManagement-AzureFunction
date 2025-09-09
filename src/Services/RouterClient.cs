@@ -56,9 +56,6 @@ namespace EmergencyManagementMCP.Services
                 
                 _logger.LogDebug("Obtained access token for Azure Maps, expires at: {ExpiresOn}, requestId={RequestId}", 
                     tokenResult.ExpiresOn, requestId);
-
-                _logger.LogWarning("Access token for Azure Maps, token at: {Token}", 
-                                    tokenResult.Token);
                                     
                 var queryParams = new List<string>
                 {
