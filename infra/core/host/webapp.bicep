@@ -22,7 +22,6 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     serverFarmId: appServicePlanId
     siteConfig: {
       linuxFxVersion: linuxFxVersion
-      alwaysOn: true
       ftpsState: 'FtpsOnly'
       minTlsVersion: '1.2'
       scmMinTlsVersion: '1.2'
