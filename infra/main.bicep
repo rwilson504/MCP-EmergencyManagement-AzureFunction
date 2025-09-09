@@ -19,6 +19,8 @@ param apiServiceName string = ''
 param apiUserAssignedIdentityName string = ''
 param applicationInsightsName string = ''
 param appServicePlanName string = ''
+@description('Optional dedicated App Service Plan name for the web frontend (if empty a name will be generated).')
+param webAppServicePlanName string = ''
 param logAnalyticsName string = ''
 param resourceGroupName string = ''
 param storageAccountName string = ''
@@ -40,8 +42,8 @@ param geoCacheContainerName string = 'routing-cache'
 @description('Web App name (must be globally unique)')
 param webAppName string = ''
 
-@description('Runtime stack for the web app')
-param linuxFxVersion string = 'NODE|18-lts'
+@description('Runtime stack for the web app (Node LTS)')
+param linuxFxVersion string = 'NODE|22-lts'
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
@@ -85,6 +87,23 @@ module appServicePlan './core/host/appserviceplan.bicep' = {
   }
 }
 
+// Dedicated multi-tenant App Service Plan for the static React web app (cannot share Flex Consumption plan used by Functions)
+module webAppServicePlan './core/host/appserviceplan.bicep' = {
+  name: 'webappserviceplan'
+  scope: rg
+  params: {
+    name: !empty(webAppServicePlanName) ? webAppServicePlanName : 'doem-${abbrs.webServerFarms}web-${resourceToken}'
+    location: location
+    tags: tags
+    // Use Basic B1 (Linux) because Free (F1) is not supported for Linux plans in this scenario
+    sku: {
+      name: 'B1'
+      tier: 'Basic'
+    }
+    kind: 'linux'
+  }
+}
+
 // Azure Maps account for fire-aware routing
 var finalMapsAccountName = !empty(mapsAccountName) ? mapsAccountName : 'doem-maps-${resourceToken}'
 
@@ -116,14 +135,16 @@ module api './app/api.bicep' = {
     identityClientId: apiUserAssignedIdentity.outputs.identityClientId
     additionalCorsOrigins: [] // Will be configured after web app is created
     appSettings: {
-      Storage__BlobServiceUrl: 'https://${storage.outputs.name}.blob.core.windows.net'
+      // Use environment() for storage suffix to avoid hardcoding public cloud DNS
+      Storage__BlobServiceUrl: 'https://${storage.outputs.name}.blob.${environment().suffixes.storage}'
       Storage__CacheContainer: geoCacheContainerName
       Fires__ArcGisFeatureUrl: 'https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query'
       Maps__RouteBase: 'https://atlas.microsoft.com'
       Maps__SearchBase: 'https://atlas.microsoft.com'
       Maps__ClientId: maps.outputs.clientId
     }
-    virtualNetworkSubnetId: !vnetEnabled ? '' : serviceVirtualNetwork.outputs.appSubnetID
+  // Guard optional module reference (module only exists when vnetEnabled=true)
+  virtualNetworkSubnetId: vnetEnabled ? serviceVirtualNetwork.outputs.appSubnetID : ''
   }
 }
 
@@ -134,7 +155,8 @@ module webApp 'core/host/webapp.bicep' = {
   params: {
     name: finalWebAppName
     location: location
-    appServicePlanId: appServicePlan.outputs.id
+    // Use dedicated web plan (Free tier) because FlexConsumption (FC1) cannot host a standard Web App
+    appServicePlanId: webAppServicePlan.outputs.id
     tags: tags
     linuxFxVersion: linuxFxVersion
     serviceName: 'web'
@@ -210,7 +232,7 @@ module storagePrivateEndpoint 'app/storage-PrivateEndpoint.bicep' = if (vnetEnab
     location: location
     tags: tags
     virtualNetworkName: !empty(vNetName) ? vNetName : 'doem-${abbrs.networkVirtualNetworks}${resourceToken}'
-    subnetName: !vnetEnabled ? '' : serviceVirtualNetwork.outputs.peSubnetName
+  subnetName: vnetEnabled ? serviceVirtualNetwork.outputs.peSubnetName : ''
     resourceName: storage.outputs.name
   }
 }
@@ -260,6 +282,6 @@ output AZURE_TENANT_ID string = tenant().tenantId
 output SERVICE_API_NAME string = api.outputs.SERVICE_API_NAME
 output AZURE_FUNCTION_NAME string = api.outputs.SERVICE_API_NAME
 output AZURE_MAPS_ACCOUNT_NAME string = maps.outputs.name
-output GEO_CACHE_CONTAINER_URI string = 'https://${storage.outputs.name}.blob.core.windows.net/${geoCacheContainerName}'
+output GEO_CACHE_CONTAINER_URI string = 'https://${storage.outputs.name}.blob.${environment().suffixes.storage}/${geoCacheContainerName}'
 output WEB_APP_NAME string = webApp.outputs.webAppName
 output WEB_APP_URL string = webApp.outputs.webAppUrl
