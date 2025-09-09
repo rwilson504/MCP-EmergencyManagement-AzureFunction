@@ -11,5 +11,5 @@ services:
   web:
     project: ./web/
     language: js
-    host: staticwebapp
+    host: appservice
     dist: dist

@@ -27,6 +27,9 @@ param instanceMemoryMB int = 2048
 param maximumInstanceCount int = 100
 param deploymentStorageContainerName string
 
+@description('Additional allowed origins for CORS (e.g., web app domain)')
+param additionalCorsOrigins array = []
+
 resource stg 'Microsoft.Storage/storageAccounts@2022-09-01' existing = {
   name: storageAccountName
 }
@@ -81,11 +84,10 @@ resource functions 'Microsoft.Web/sites@2023-12-01' = {
     name: 'web'
     properties: {
       cors: {
-        allowedOrigins: [
+        allowedOrigins: union([
           'http://localhost:3000'
           'https://localhost:3000'
-          // Additional origins can be added here for production deployments
-        ]
+        ], additionalCorsOrigins)
         supportCredentials: true
       }
       use32BitWorkerProcess: false

@@ -36,13 +36,12 @@ param mapsSku string = 'G2'
 @description('Geo cache container name')
 param geoCacheContainerName string = 'routing-cache'
 
-// Static Web App Parameters
-@description('Static Web App name (must be globally unique)')
-param staticWebAppName string = ''
+// Web App Parameters
+@description('Web App name (must be globally unique)')
+param webAppName string = ''
 
-@description('Static Web App SKU')
-@allowed(['Free', 'Standard'])
-param staticWebAppSku string = 'Standard'
+@description('Runtime stack for the web app')
+param linuxFxVersion string = 'NODE|18-lts'
 
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
@@ -50,8 +49,8 @@ var tags = { 'azd-env-name': environmentName }
 var functionAppName = !empty(apiServiceName) ? apiServiceName : 'doem-${abbrs.webSitesFunctions}api-${resourceToken}'
 var deploymentStorageContainerName = 'app-package-${take(functionAppName, 32)}-${take(toLower(uniqueString(functionAppName, resourceToken)), 7)}'
 
-// Static Web App name with fallback
-var finalStaticWebAppName = !empty(staticWebAppName) ? staticWebAppName : 'doem-${abbrs.webStaticSites}${resourceToken}'
+// Web App name with fallback
+var finalWebAppName = !empty(webAppName) ? webAppName : 'doem-${abbrs.webSitesAppService}${resourceToken}'
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -100,20 +99,6 @@ module maps 'core/security/maps.bicep' = {
   }
 }
 
-// Static Web App for hosting React frontend
-module staticWebApp 'core/host/staticwebapp.bicep' = {
-  name: 'staticwebapp'
-  scope: rg
-  params: {
-    name: finalStaticWebAppName
-    location: location // Use same region as other resources
-    sku: staticWebAppSku
-    tags: tags
-    functionAppResourceId: api.outputs.SERVICE_API_RESOURCE_ID
-    functionAppRegion: location
-  }
-}
-
 module api './app/api.bicep' = {
   name: 'api'
   scope: rg
@@ -129,6 +114,7 @@ module api './app/api.bicep' = {
     deploymentStorageContainerName: deploymentStorageContainerName
     identityId: apiUserAssignedIdentity.outputs.identityId
     identityClientId: apiUserAssignedIdentity.outputs.identityClientId
+    additionalCorsOrigins: [] // Will be configured after web app is created
     appSettings: {
       Storage__BlobServiceUrl: 'https://${storage.outputs.name}.blob.core.windows.net'
       Storage__CacheContainer: geoCacheContainerName
@@ -138,6 +124,29 @@ module api './app/api.bicep' = {
       Maps__ClientId: maps.outputs.clientId
     }
     virtualNetworkSubnetId: !vnetEnabled ? '' : serviceVirtualNetwork.outputs.appSubnetID
+  }
+}
+
+// Web App for hosting React frontend
+module webApp 'core/host/webapp.bicep' = {
+  name: 'webapp'
+  scope: rg
+  params: {
+    name: finalWebAppName
+    location: location
+    appServicePlanId: appServicePlan.outputs.id
+    tags: tags
+    linuxFxVersion: linuxFxVersion
+  }
+}
+
+// Update Function App CORS to include Web App URL
+module functionCorsUpdate 'core/host/function-cors-update.bicep' = {
+  name: 'function-cors-update'
+  scope: rg
+  params: {
+    functionAppName: api.outputs.SERVICE_API_NAME
+    webAppUrl: webApp.outputs.webAppUrl
   }
 }
 
@@ -251,5 +260,5 @@ output SERVICE_API_NAME string = api.outputs.SERVICE_API_NAME
 output AZURE_FUNCTION_NAME string = api.outputs.SERVICE_API_NAME
 output AZURE_MAPS_ACCOUNT_NAME string = maps.outputs.name
 output GEO_CACHE_CONTAINER_URI string = 'https://${storage.outputs.name}.blob.core.windows.net/${geoCacheContainerName}'
-output STATIC_WEB_APP_NAME string = staticWebApp.outputs.staticWebAppName
-output STATIC_WEB_APP_URL string = 'https://${staticWebApp.outputs.defaultHostname}'
+output WEB_APP_NAME string = webApp.outputs.webAppName
+output WEB_APP_URL string = webApp.outputs.webAppUrl

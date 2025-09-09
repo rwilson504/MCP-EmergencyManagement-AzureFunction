@@ -15,6 +15,9 @@ param maximumInstanceCount int = 100
 param identityId string = ''
 param identityClientId string = ''
 
+@description('Additional CORS origins (e.g., web app URL)')
+param additionalCorsOrigins array = []
+
 var applicationInsightsIdentity = 'ClientId=${identityClientId};Authorization=AAD'
 
 module api '../core/host/functions-flexconsumption.bicep' = {
@@ -39,6 +42,7 @@ module api '../core/host/functions-flexconsumption.bicep' = {
     virtualNetworkSubnetId: virtualNetworkSubnetId
     instanceMemoryMB: instanceMemoryMB 
     maximumInstanceCount: maximumInstanceCount
+    additionalCorsOrigins: additionalCorsOrigins
   }
 }
 

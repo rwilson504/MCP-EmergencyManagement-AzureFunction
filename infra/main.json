@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "14363141023079711283"
+      "templateHash": "2499058941993681162"
     }
   },
   "parameters": {
@@ -101,6 +101,20 @@
       "defaultValue": "routing-cache",
       "metadata": {
         "description": "Geo cache container name"
+      }
+    },
+    "webAppName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Web App name (must be globally unique)"
+      }
+    },
+    "linuxFxVersion": {
+      "type": "string",
+      "defaultValue": "NODE|18-lts",
+      "metadata": {
+        "description": "Runtime stack for the web app"
       }
     }
   },
@@ -247,6 +261,7 @@
     },
     "functionAppName": "[if(not(empty(parameters('apiServiceName'))), parameters('apiServiceName'), format('doem-{0}api-{1}', variables('abbrs').webSitesFunctions, variables('resourceToken')))]",
     "deploymentStorageContainerName": "[format('app-package-{0}-{1}', take(variables('functionAppName'), 32), take(toLower(uniqueString(variables('functionAppName'), variables('resourceToken'))), 7))]",
+    "finalWebAppName": "[if(not(empty(parameters('webAppName'))), parameters('webAppName'), format('doem-{0}{1}', variables('abbrs').webSitesAppService, variables('resourceToken')))]",
     "finalMapsAccountName": "[if(not(empty(parameters('mapsAccountName'))), parameters('mapsAccountName'), format('doem-maps-{0}', variables('resourceToken')))]",
     "StorageBlobDataOwner": "b7e6dc6d-f1e8-4753-8033-0f276bb0955b",
     "StorageQueueDataContributor": "974c5e8b-45b9-4653-ba55-5f855dd0fb88",
@@ -550,6 +565,9 @@
           "identityClientId": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'apiUserAssignedIdentity'), '2022-09-01').outputs.identityClientId.value]"
           },
+          "additionalCorsOrigins": {
+            "value": []
+          },
           "appSettings": {
             "value": {
               "Storage__BlobServiceUrl": "[format('https://{0}.blob.core.windows.net', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'storage'), '2022-09-01').outputs.name.value)]",
@@ -569,7 +587,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "3309018652748105106"
+              "templateHash": "3145650025885757678"
             }
           },
           "parameters": {
@@ -630,6 +648,13 @@
             "identityClientId": {
               "type": "string",
               "defaultValue": ""
+            },
+            "additionalCorsOrigins": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Additional CORS origins (e.g., web app URL)"
+              }
             }
           },
           "variables": {
@@ -690,6 +715,9 @@
                   },
                   "maximumInstanceCount": {
                     "value": "[parameters('maximumInstanceCount')]"
+                  },
+                  "additionalCorsOrigins": {
+                    "value": "[parameters('additionalCorsOrigins')]"
                   }
                 },
                 "template": {
@@ -699,7 +727,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.37.4.10188",
-                      "templateHash": "16532765670623363108"
+                      "templateHash": "11724419023972648476"
                     }
                   },
                   "parameters": {
@@ -783,6 +811,13 @@
                     },
                     "deploymentStorageContainerName": {
                       "type": "string"
+                    },
+                    "additionalCorsOrigins": {
+                      "type": "array",
+                      "defaultValue": [],
+                      "metadata": {
+                        "description": "Additional allowed origins for CORS (e.g., web app domain)"
+                      }
                     }
                   },
                   "resources": [
@@ -791,6 +826,22 @@
                       "apiVersion": "2023-12-01",
                       "name": "[format('{0}/{1}', parameters('name'), 'appsettings')]",
                       "properties": "[union(parameters('appSettings'), createObject('AzureWebJobsStorage__accountName', parameters('storageAccountName'), 'AzureWebJobsStorage__credential', 'managedidentity', 'APPLICATIONINSIGHTS_CONNECTION_STRING', reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2020-02-02').ConnectionString))]",
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Web/sites/config",
+                      "apiVersion": "2023-12-01",
+                      "name": "[format('{0}/{1}', parameters('name'), 'web')]",
+                      "properties": {
+                        "cors": {
+                          "allowedOrigins": "[union(createArray('http://localhost:3000', 'https://localhost:3000'), parameters('additionalCorsOrigins'))]",
+                          "supportCredentials": true
+                        },
+                        "use32BitWorkerProcess": false,
+                        "ftpsState": "Disabled"
+                      },
                       "dependsOn": [
                         "[resourceId('Microsoft.Web/sites', parameters('name'))]"
                       ]
@@ -846,6 +897,10 @@
                     "identityPrincipalId": {
                       "type": "string",
                       "value": "[if(equals(parameters('identityType'), 'SystemAssigned'), reference(resourceId('Microsoft.Web/sites', parameters('name')), '2023-12-01', 'full').identity.principalId, '')]"
+                    },
+                    "resourceId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
                     }
                   }
                 }
@@ -860,6 +915,10 @@
             "SERVICE_API_IDENTITY_PRINCIPAL_ID": {
               "type": "string",
               "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}-functions-module', parameters('serviceName'))), '2022-09-01').outputs.identityPrincipalId.value]"
+            },
+            "SERVICE_API_RESOURCE_ID": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Resources/deployments', format('{0}-functions-module', parameters('serviceName'))), '2022-09-01').outputs.resourceId.value]"
             }
           }
         }
@@ -872,6 +931,213 @@
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName'))))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'serviceVirtualNetwork')]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'storage')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "webapp",
+      "resourceGroup": "[if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[variables('finalWebAppName')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "appServicePlanId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'appserviceplan'), '2022-09-01').outputs.id.value]"
+          },
+          "tags": {
+            "value": "[variables('tags')]"
+          },
+          "linuxFxVersion": {
+            "value": "[parameters('linuxFxVersion')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "13545190295840977620"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Web App"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the Web App"
+              }
+            },
+            "appServicePlanId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service Plan ID"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the Web App"
+              }
+            },
+            "linuxFxVersion": {
+              "type": "string",
+              "defaultValue": "NODE|18-lts",
+              "metadata": {
+                "description": "Runtime stack for the web app"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2023-12-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "app,linux",
+              "properties": {
+                "serverFarmId": "[parameters('appServicePlanId')]",
+                "siteConfig": {
+                  "linuxFxVersion": "[parameters('linuxFxVersion')]",
+                  "alwaysOn": true,
+                  "ftpsState": "FtpsOnly",
+                  "minTlsVersion": "1.2",
+                  "scmMinTlsVersion": "1.2",
+                  "use32BitWorkerProcess": false,
+                  "webSocketsEnabled": false,
+                  "managedPipelineMode": "Integrated",
+                  "appSettings": [
+                    {
+                      "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                      "value": "18.19.0"
+                    },
+                    {
+                      "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+                      "value": "false"
+                    },
+                    {
+                      "name": "WEBSITE_RUN_FROM_PACKAGE",
+                      "value": "1"
+                    }
+                  ],
+                  "defaultDocuments": [
+                    "index.html"
+                  ]
+                },
+                "httpsOnly": true,
+                "clientAffinityEnabled": false
+              }
+            }
+          ],
+          "outputs": {
+            "webAppName": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "webAppId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "defaultHostname": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2023-12-01').defaultHostName]"
+            },
+            "webAppUrl": {
+              "type": "string",
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.Web/sites', parameters('name')), '2023-12-01').defaultHostName)]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'appserviceplan')]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName'))))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "function-cors-update",
+      "resourceGroup": "[if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "functionAppName": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'api'), '2022-09-01').outputs.SERVICE_API_NAME.value]"
+          },
+          "webAppUrl": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'webapp'), '2022-09-01').outputs.webAppUrl.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.37.4.10188",
+              "templateHash": "6884844869316342117"
+            }
+          },
+          "parameters": {
+            "functionAppName": {
+              "type": "string",
+              "metadata": {
+                "description": "Function App name"
+              }
+            },
+            "webAppUrl": {
+              "type": "string",
+              "metadata": {
+                "description": "Web App URL to add to CORS"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites/config",
+              "apiVersion": "2023-12-01",
+              "name": "[format('{0}/{1}', parameters('functionAppName'), 'web')]",
+              "properties": {
+                "cors": {
+                  "allowedOrigins": [
+                    "http://localhost:3000",
+                    "https://localhost:3000",
+                    "[parameters('webAppUrl')]"
+                  ],
+                  "supportCredentials": true
+                },
+                "use32BitWorkerProcess": false,
+                "ftpsState": "Disabled"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'api')]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName'))))]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'webapp')]"
       ]
     },
     {
@@ -902,6 +1168,9 @@
               },
               {
                 "name": "[parameters('geoCacheContainerName')]"
+              },
+              {
+                "name": "links"
               }
             ]
           },
@@ -1939,6 +2208,14 @@
     "GEO_CACHE_CONTAINER_URI": {
       "type": "string",
       "value": "[format('https://{0}.blob.core.windows.net/{1}', reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'storage'), '2022-09-01').outputs.name.value, parameters('geoCacheContainerName'))]"
+    },
+    "WEB_APP_NAME": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'webapp'), '2022-09-01').outputs.webAppName.value]"
+    },
+    "WEB_APP_URL": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'webapp'), '2022-09-01').outputs.webAppUrl.value]"
     }
   }
 }
