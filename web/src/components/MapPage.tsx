@@ -43,9 +43,12 @@ export default function MapPage() {
     const qp = new URLSearchParams(location.search);
     const id = qp.get('id');
     
+    // Get API base URL from environment
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+    
     if (id) {
       // Short-link flow: fetch from API
-      const response = await fetch(`/api/routeLinks/${encodeURIComponent(id)}`, { 
+      const response = await fetch(`${apiBaseUrl}/routeLinks/${encodeURIComponent(id)}`, { 
         credentials: 'include' 
       });
       if (!response.ok) {
@@ -97,7 +100,10 @@ export default function MapPage() {
   };
 
   const getToken = (): Promise<string> => {
-    return fetch('/api/maps-token', { credentials: 'include' })
+    // Get API base URL from environment
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+    
+    return fetch(`${apiBaseUrl}/maps-token`, { credentials: 'include' })
       .then(response => {
         if (!response.ok) {
           throw new Error(`Token request failed: ${response.status} ${response.statusText}`);
