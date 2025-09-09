@@ -2,7 +2,7 @@
 param name string
 
 @description('Location for the Static Web App')
-param location string = 'centralus'
+param location string = 'eastus2'
 
 @description('SKU for the Static Web App')
 @allowed(['Free', 'Standard'])
@@ -14,49 +14,39 @@ param tags object = {}
 @description('Function App resource ID for API backend integration')
 param functionAppResourceId string = ''
 
+@description('Function App region for backend integration')
+param functionAppRegion string = ''
+
 @description('Custom domain for the Static Web App (optional)')
 param customDomain string = ''
 
-resource staticWebApp 'Microsoft.Web/staticSites@2023-01-01' = {
+resource staticWebApp 'Microsoft.Web/staticSites@2023-12-01' = {
   name: name
   location: location
   tags: tags
   sku: {
     name: sku
-    tier: sku
   }
   properties: {
-    // Build configuration for React SPA
-    buildProperties: {
-      appLocation: '/web'
-      outputLocation: 'dist'
-      appBuildCommand: 'npm run build'
-      apiBuildCommand: ''
-      skipGithubActionWorkflowGeneration: true
-    }
-
-    // Enable authentication providers
-    provider: 'Custom'
-    
     // Enable staging environments
     stagingEnvironmentPolicy: 'Enabled'
   }
 }
 
 // Configure custom domain if provided
-resource customDomainResource 'Microsoft.Web/staticSites/customDomains@2023-01-01' = if (!empty(customDomain)) {
+resource customDomainResource 'Microsoft.Web/staticSites/customDomains@2023-12-01' = if (!empty(customDomain)) {
   parent: staticWebApp
   name: customDomain
   properties: {}
 }
 
 // Configure Function App backend integration
-resource functionIntegration 'Microsoft.Web/staticSites/linkedBackends@2023-01-01' = if (!empty(functionAppResourceId)) {
+resource functionIntegration 'Microsoft.Web/staticSites/linkedBackends@2023-12-01' = if (!empty(functionAppResourceId)) {
   parent: staticWebApp
   name: 'functionBackend'
   properties: {
     backendResourceId: functionAppResourceId
-    region: location
+    region: !empty(functionAppRegion) ? functionAppRegion : 'eastus'
   }
 }
 

@@ -106,10 +106,11 @@ module staticWebApp 'core/host/staticwebapp.bicep' = {
   scope: rg
   params: {
     name: finalStaticWebAppName
-    location: 'centralus' // SWA has limited region availability
+    location: 'eastus2' // SWA requires specific regions with broader Free tier support
     sku: staticWebAppSku
     tags: tags
     functionAppResourceId: api.outputs.SERVICE_API_RESOURCE_ID
+    functionAppRegion: location
   }
 }
 
