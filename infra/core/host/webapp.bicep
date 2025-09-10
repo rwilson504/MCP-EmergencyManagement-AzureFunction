@@ -37,6 +37,9 @@ param apiBaseUrl string = ''
 @description('Optional Azure Maps Client ID for map rendering.')
 param azureMapsClientId string = ''
 
+@description('Revision marker to force app settings redeployment when incremented.')
+param appSettingsRevision string = '2025-09-10.1'
+
 // NOTE: Simpler explicit array (leaves empty AI connection string if not provided)
 
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
@@ -62,61 +65,6 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
       managedPipelineMode: 'Integrated'
       // Specify startup command to ensure the web app starts with the correct server
       appCommandLine: 'npm start'
-      // Configure app settings (runtime + optional App Insights + deployment behavior)
-      appSettings: [
-        {
-          name: 'WEBSITE_NODE_DEFAULT_VERSION'
-          value: nodeVersion
-        }
-        {
-          name: 'APP_NODE_VERSION'
-          value: nodeVersion
-        }
-        {
-          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-          value: applicationInsightsConnectionString
-        }
-        {
-          // Legacy instrumentation key for portal "Application Insights: On" badge (extracted from connection string if present)
-          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: empty(applicationInsightsConnectionString) ? '' : split(split(applicationInsightsConnectionString, ';')[0], '=')[1]
-        }
-        {
-          name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          // Enable Oryx build so node_modules (e.g., express) are installed during zip deploy
-          value: 'true'
-        }
-        {
-          name: 'ENABLE_ORYX_BUILD'
-          // Explicitly enable Oryx build for Node.js applications
-          value: 'true'
-        }
-        {
-          name: 'BUILD_FLAGS'
-          // Additional build flags for Oryx to ensure proper Node.js build
-          value: 'UseAppServiceBuild=true'
-        }
-        {
-          name: 'PROJECT'
-          // Specify the project path for Oryx build (relative to repository root)
-          value: 'web'
-        }
-        // Removed WEBSITE_RUN_FROM_PACKAGE to allow normal static file serving / custom server
-        {
-          name: 'API_BASE_URL'
-          value: apiBaseUrl
-        }
-        {
-          // Expose explicit client ID to disambiguate which managed identity DefaultAzureCredential should use
-          name: 'AZURE_CLIENT_ID'
-          value: userAssignedIdentityClientId
-        }
-        {
-          // Azure Maps Client ID for frontend map rendering
-          name: 'AZURE_MAPS_CLIENT_ID'
-          value: azureMapsClientId
-        }
-      ]
       // Configure default documents
       defaultDocuments: [
         'index.html'
@@ -124,6 +72,26 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
     }
     httpsOnly: true
     clientAffinityEnabled: false
+  }
+}
+
+// Dedicated child resource for Web App application settings to ensure reliable incremental updates.
+resource webAppAppSettings 'Microsoft.Web/sites/config@2023-12-01' = {
+  name: 'appsettings'
+  parent: webApp
+  properties: {
+    WEBSITE_NODE_DEFAULT_VERSION: nodeVersion
+    APP_NODE_VERSION: nodeVersion
+    APPLICATIONINSIGHTS_CONNECTION_STRING: applicationInsightsConnectionString
+    APPINSIGHTS_INSTRUMENTATIONKEY: empty(applicationInsightsConnectionString) ? '' : split(split(applicationInsightsConnectionString, ';')[0], '=')[1]
+    SCM_DO_BUILD_DURING_DEPLOYMENT: 'true'
+    ENABLE_ORYX_BUILD: 'true'
+    BUILD_FLAGS: 'UseAppServiceBuild=true'
+    PROJECT: 'web'
+    API_BASE_URL: apiBaseUrl
+    AZURE_CLIENT_ID: userAssignedIdentityClientId
+    AZURE_MAPS_CLIENT_ID: azureMapsClientId
+    APP_SETTINGS_REVISION: appSettingsRevision
   }
 }
 

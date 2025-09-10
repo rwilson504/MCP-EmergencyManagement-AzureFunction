@@ -6,10 +6,8 @@ services:
     project: ./src/
     language: dotnet
     host: function
-    resourceGroup: doem-rg-raw-dev
     region: eastus
   web:
     project: ./web/
     language: js
     host: appservice
-    resourceGroup: doem-rg-raw-dev
