@@ -192,6 +192,23 @@ module webApp 'core/host/webapp.bicep' = {
   }
 }
 
+// Enhanced container logging for the web app
+module webAppContainerLogging 'core/monitor/container-logs.bicep' = {
+  name: 'webapp-container-logging'
+  scope: rg
+  params: {
+    webAppName: webApp.outputs.webAppName
+    resourceGroupName: rg.name
+    logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
+    enableContainerLogging: true
+    logLevel: 'Verbose'
+  }
+  dependsOn: [
+    webApp
+    monitoring
+  ]
+}
+
 // (CORS applied via api module's additionalCorsOrigins param above; no separate config resource needed)
 
 // Backing storage for Azure functions api
