@@ -28,6 +28,9 @@ param logAnalyticsWorkspaceId string = ''
 @description('Optional user-assigned managed identity resource ID to attach to the Web App.')
 param userAssignedIdentityId string = ''
 
+@description('Optional user-assigned managed identity client ID (exposed to runtime as AZURE_CLIENT_ID for DefaultAzureCredential).')
+param userAssignedIdentityClientId string = ''
+
 @description('Optional public API base URL (e.g., Function App endpoint) to expose to the SPA at runtime.')
 param apiBaseUrl string = ''
 
@@ -82,6 +85,11 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'API_BASE_URL'
           value: apiBaseUrl
+        }
+        {
+          // Expose explicit client ID to disambiguate which managed identity DefaultAzureCredential should use
+          name: 'AZURE_CLIENT_ID'
+          value: userAssignedIdentityClientId
         }
       ]
       // Configure default documents

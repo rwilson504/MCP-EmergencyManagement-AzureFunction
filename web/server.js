@@ -2,10 +2,12 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { DefaultAzureCredential } from '@azure/identity';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
+const credential = new DefaultAzureCredential();
 
 const distPath = path.join(__dirname, 'dist');
 app.use(express.static(distPath, { maxAge: '1d', index: 'index.html' }));
@@ -39,6 +41,25 @@ app.get('/_appconfig.js', (_req, res) => {
     `window.__API_BASE_URL__ = ${JSON.stringify(apiBase)};`
   ];
   res.type('application/javascript').send(payloadLines.join('\n'));
+});
+
+// Server-side token acquisition for Azure Maps using Managed Identity
+// This replaces the previous Function-based maps-token endpoint, keeping the token flow entirely within the web tier.
+app.get('/api/maps-token', async (_req, res) => {
+  try {
+    const token = await credential.getToken('https://atlas.microsoft.com/.default');
+    if (!token) {
+      return res.status(500).json({ error: 'Failed to acquire token' });
+    }
+    return res.json({
+      access_token: token.token,
+      expires_on: Math.floor(token.expiresOnTimestamp / 1000),
+      token_type: 'Bearer'
+    });
+  } catch (err) {
+    console.error('Azure Maps token acquisition failed', err);
+    return res.status(500).json({ error: 'Token acquisition failed', message: err instanceof Error ? err.message : 'Unknown error' });
+  }
 });
 
 // SPA fallback

@@ -186,6 +186,7 @@ module webApp 'core/host/webapp.bicep' = {
     applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
     userAssignedIdentityId: apiUserAssignedIdentity.outputs.identityId
+    userAssignedIdentityClientId: apiUserAssignedIdentity.outputs.identityClientId
     apiBaseUrl: 'https://${functionAppName}.azurewebsites.net/api'
   }
 }
