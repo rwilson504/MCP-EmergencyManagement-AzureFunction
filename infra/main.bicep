@@ -152,7 +152,8 @@ module api './app/api.bicep' = {
     deploymentStorageContainerName: deploymentStorageContainerName
     identityId: apiUserAssignedIdentity.outputs.identityId
     identityClientId: apiUserAssignedIdentity.outputs.identityClientId
-    additionalCorsOrigins: [] // Will be configured after web app is created
+    // Deterministic CORS origin (Pattern A) avoids referencing web module outputs, preventing circular dependency
+    additionalCorsOrigins: [ 'https://${(!empty(webAppName) ? webAppName : finalWebAppName)}.azurewebsites.net' ]
     appSettings: {
       // Use environment() for storage suffix to avoid hardcoding public cloud DNS
       Storage__BlobServiceUrl: 'https://${storage.outputs.name}.blob.${environment().suffixes.storage}'
@@ -162,6 +163,8 @@ module api './app/api.bicep' = {
       Maps__SearchBase: 'https://atlas.microsoft.com'
       Maps__ClientId: maps.outputs.clientId
       ManagedIdentity__ClientId: apiUserAssignedIdentity.outputs.identityClientId
+      // Base URL for deterministic route link generation so links point at the public web frontend, not the function host
+      // RouteLinks__BaseUrl will be patched post-provision via a separate mechanism to avoid circular dependency
     }
     // Only provide subnet ID if VNet is enabled (prevents null-module output dereference)
   virtualNetworkSubnetId: safeAppSubnetId
@@ -183,18 +186,11 @@ module webApp 'core/host/webapp.bicep' = {
     applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
     userAssignedIdentityId: apiUserAssignedIdentity.outputs.identityId
+    apiBaseUrl: 'https://${functionAppName}.azurewebsites.net/api'
   }
 }
 
-// Update Function App CORS to include Web App URL
-module functionCorsUpdate 'core/host/function-cors-update.bicep' = {
-  name: 'function-cors-update'
-  scope: rg
-  params: {
-    functionAppName: api.outputs.SERVICE_API_NAME
-    webAppUrl: webApp.outputs.webAppUrl
-  }
-}
+// (CORS applied via api module's additionalCorsOrigins param above; no separate config resource needed)
 
 // Backing storage for Azure functions api
 module storage './core/storage/storage-account.bicep' = {

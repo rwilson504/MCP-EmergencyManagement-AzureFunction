@@ -5,10 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Emergency Management Maps Viewer</title>
+  <script src="/_appconfig.js"></script>
     <!-- Application Insights Browser SDK (lightweight snippet). Connection string will be injected via build or falls back to window.__APPINSIGHTS_CONNECTION_STRING__ if set by server config. -->
     <script>
       (function(){
-        const cs = window.__APPINSIGHTS_CONNECTION_STRING__ || '';
+        var cs = window.__APPINSIGHTS_CONNECTION_STRING__ || '';
+        var ikey = window.__APPINSIGHTS_INSTRUMENTATION_KEY__ || '';
+        if(!cs && ikey){ cs = 'InstrumentationKey=' + ikey; }
         if(!cs){ console.debug('App Insights connection string not present; client telemetry disabled.'); return; }
         // Minimal loader for AI JS SDK
         (function(cfg){

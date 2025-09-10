@@ -28,6 +28,9 @@ param logAnalyticsWorkspaceId string = ''
 @description('Optional user-assigned managed identity resource ID to attach to the Web App.')
 param userAssignedIdentityId string = ''
 
+@description('Optional public API base URL (e.g., Function App endpoint) to expose to the SPA at runtime.')
+param apiBaseUrl string = ''
+
 // NOTE: Simpler explicit array (leaves empty AI connection string if not provided)
 
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
@@ -76,6 +79,10 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
           value: 'true'
         }
         // Removed WEBSITE_RUN_FROM_PACKAGE to allow normal static file serving / custom server
+        {
+          name: 'API_BASE_URL'
+          value: apiBaseUrl
+        }
       ]
       // Configure default documents
       defaultDocuments: [

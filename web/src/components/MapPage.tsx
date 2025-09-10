@@ -43,8 +43,9 @@ export default function MapPage() {
     const qp = new URLSearchParams(location.search);
     const id = qp.get('id');
     
-    // Get API base URL from environment
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+  // Resolve API base URL with precedence: runtime injected global -> build-time env -> default '/api'
+  const runtimeApiBase = (globalThis as any).__API_BASE_URL__ as string | undefined;
+  const apiBaseUrl = (runtimeApiBase && runtimeApiBase.length > 0 ? runtimeApiBase : import.meta.env.VITE_API_BASE_URL) || '/api';
     
     if (id) {
       // Short-link flow: fetch from API
@@ -100,8 +101,9 @@ export default function MapPage() {
   };
 
   const getToken = (): Promise<string> => {
-    // Get API base URL from environment
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+  // Resolve API base URL with precedence: runtime injected global -> build-time env -> default '/api'
+  const runtimeApiBase = (globalThis as any).__API_BASE_URL__ as string | undefined;
+  const apiBaseUrl = (runtimeApiBase && runtimeApiBase.length > 0 ? runtimeApiBase : import.meta.env.VITE_API_BASE_URL) || '/api';
     
     return fetch(`${apiBaseUrl}/maps-token`, { credentials: 'include' })
       .then(response => {

@@ -95,17 +95,30 @@ namespace EmergencyManagementMCP.Functions
 
                 stopwatch.Stop();
 
-                // Create response with link information
-                var hostUrl = req.Url.Scheme + "://" + req.Url.Host;
-                if (req.Url.Port != 80 && req.Url.Port != 443)
+                // Determine public base URL for viewing links.
+                // Priority: explicit config (RouteLinks:BaseUrl or RouteLinks__BaseUrl) -> WEBSITE_HOSTNAME -> request host.
+                var configuredBase = _configuration["RouteLinks:BaseUrl"] ?? _configuration["RouteLinks__BaseUrl"]; // support both naming styles
+                var websiteHost = Environment.GetEnvironmentVariable("WEBSITE_HOSTNAME");
+                string viewBase;
+                if (!string.IsNullOrWhiteSpace(configuredBase))
                 {
-                    hostUrl += ":" + req.Url.Port;
+                    viewBase = configuredBase.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? configuredBase : $"https://{configuredBase}";
                 }
+                else if (!string.IsNullOrWhiteSpace(websiteHost))
+                {
+                    viewBase = $"https://{websiteHost}";
+                }
+                else
+                {
+                    // Fall back to request URL (likely local dev)
+                    viewBase = req.Url.Scheme + "://" + req.Url.Host + ((req.Url.Port != 80 && req.Url.Port != 443) ? ":" + req.Url.Port : string.Empty);
+                }
+                viewBase = viewBase.TrimEnd('/');
 
                 var routeLink = new RouteLink
                 {
                     Id = linkId,
-                    Url = $"{hostUrl}/view?id={linkId}",
+                    Url = $"{viewBase}/view?id={linkId}",
                     CreatedAt = DateTime.UtcNow,
                     ExpiresAt = routeSpec.TtlMinutes.HasValue ? DateTime.UtcNow.AddMinutes(routeSpec.TtlMinutes.Value) : null
                 };
