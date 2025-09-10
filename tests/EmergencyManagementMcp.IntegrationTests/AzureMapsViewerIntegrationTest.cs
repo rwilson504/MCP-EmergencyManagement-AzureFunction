@@ -173,7 +173,7 @@ namespace EmergencyManagementMcp.IntegrationTests
             _output.WriteLine("");
             _output.WriteLine("Azure Maps:");
             _output.WriteLine("  ✓ Account already exists with disableLocalAuth: true (AAD only)");
-            _output.WriteLine("  ✓ Client ID (uniqueId) already exposed via Maps__ClientId app setting");
+            _output.WriteLine("  ✓ Client ID (uniqueId) already exposed via Maps:ClientId app setting");
             _output.WriteLine("");
             _output.WriteLine("No breaking changes to existing MCP functionality");
         }

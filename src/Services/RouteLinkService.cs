@@ -20,7 +20,7 @@ namespace EmergencyManagementMCP.Services
         {
             _logger = logger;
             _config = config;
-            var miClientId = _config["ManagedIdentity:ClientId"] ?? _config["ManagedIdentity__ClientId"] ?? _config["AzureWebJobsStorage:clientId"];
+            var miClientId = _config["ManagedIdentity:ClientId"] ?? _config["ManagedIdentity:ClientId"] ?? _config["AzureWebJobsStorage:clientId"];
             if (!string.IsNullOrEmpty(miClientId))
             {
                 _credential = new ManagedIdentityCredential(miClientId);
@@ -31,7 +31,7 @@ namespace EmergencyManagementMCP.Services
                 _credential = new DefaultAzureCredential();
                 _logger.LogInformation("[RouteLink] Using DefaultAzureCredential (no explicit managed identity clientId)");
             }
-            _storageUrl = _config["Storage__BlobServiceUrl"] ?? throw new InvalidOperationException("Storage__BlobServiceUrl missing");
+            _storageUrl = _config["Storage:BlobServiceUrl"] ?? throw new InvalidOperationException("Storage:BlobServiceUrl missing");
         }
 
         public async Task<RouteLink> CreateAsync(Coordinate origin, Coordinate destination, IEnumerable<string> appliedAvoids, TimeSpan? ttl = null, CancellationToken cancellationToken = default)

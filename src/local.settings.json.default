@@ -6,22 +6,22 @@
     "FUNCTIONS_EXTENSION_VERSION": "~4",
     
     "_comment_storage": "Replace with your actual storage account for testing cache functionality",
-    "Storage__BlobServiceUrl": "https://[YOUR_STORAGE_ACCOUNT_NAME].blob.core.windows.net",
-    "Storage__CacheContainer": "routing-cache",
+    "Storage:BlobServiceUrl": "https://[YOUR_STORAGE_ACCOUNT_NAME].blob.core.windows.net",
+    "Storage:CacheContainer": "routing-cache",
     
     "_comment_fires": "ArcGIS service URL for fire perimeter data",
-    "Fires__ArcGisFeatureUrl": "https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query",
+    "Fires:ArcGisFeatureUrl": "https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query",
     
     "_comment_maps": "Azure Maps configuration for managed identity authentication",
-    "Maps__RouteBase": "https://atlas.microsoft.com",
-    "Maps__SearchBase": "https://atlas.microsoft.com",
-    "Maps__ClientId": "[YOUR_AZURE_MAPS_CLIENT_ID]",
+    "Maps:RouteBase": "https://atlas.microsoft.com",
+    "Maps:SearchBase": "https://atlas.microsoft.com",
+    "Maps:ClientId": "[YOUR_AZURE_MAPS_CLIENT_ID]",
     
     "_comment_appinsights": "Optional: Add Application Insights connection string for local telemetry",
     "APPLICATIONINSIGHTS_CONNECTION_STRING": "",
     
     "_comment_managed_identity": "For Azure Functions, the managed identity client ID is automatically set by the infrastructure",
-    "AzureWebJobsStorage__clientId": ""
+    "AzureWebJobsStorage:clientId": ""
   },
   "Host": {
     "CORS": "*",

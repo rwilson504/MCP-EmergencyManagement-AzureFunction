@@ -16,13 +16,13 @@ namespace EmergencyManagementMCP.Services
         public GeoJsonCache(ILogger<GeoJsonCache> logger, IConfiguration config)
         {
             _logger = logger;
-            _containerName = config["Storage__CacheContainer"] ?? "routing-cache";            
+            _containerName = config["Storage:CacheContainer"] ?? "routing-cache";            
 
-            var blobServiceUrl = config["Storage__BlobServiceUrl"];
+            var blobServiceUrl = config["Storage:BlobServiceUrl"];
             if (string.IsNullOrEmpty(blobServiceUrl))
             {
-                _logger.LogError("Storage__BlobServiceUrl configuration is missing");
-                throw new InvalidOperationException("Storage__BlobServiceUrl configuration is required");
+                _logger.LogError("Storage:BlobServiceUrl configuration is missing");
+                throw new InvalidOperationException("Storage:BlobServiceUrl configuration is required");
             }
 
             try

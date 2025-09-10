@@ -16,7 +16,7 @@ namespace EmergencyManagementMCP.Services
         {
             _httpClient = httpClient;
             _logger = logger;
-            _arcGisFeatureUrl = config["Fires__ArcGisFeatureUrl"] ?? "https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query";
+            _arcGisFeatureUrl = config["Fires:ArcGisFeatureUrl"] ?? "https://services3.arcgis.com/T4QMspbfLg3qTGWY/ArcGIS/rest/services/WFIGS_Interagency_Perimeters_YearToDate/FeatureServer/0/query";
             
             _logger.LogInformation("GeoServiceClient initialized with ArcGIS URL: {Url}", _arcGisFeatureUrl);
         }

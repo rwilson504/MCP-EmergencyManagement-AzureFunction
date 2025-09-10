@@ -58,10 +58,10 @@ namespace EmergencyManagementMCP.Functions
                 var linkId = Guid.NewGuid().ToString("N")[..12]; // Shorter ID for friendlier URLs
 
                 // Get storage account connection
-                var storageUrl = _configuration["Storage__BlobServiceUrl"];
+                var storageUrl = _configuration["Storage:BlobServiceUrl"];
                 if (string.IsNullOrEmpty(storageUrl))
                 {
-                    throw new InvalidOperationException("Storage__BlobServiceUrl configuration is missing");
+                    throw new InvalidOperationException("Storage:BlobServiceUrl configuration is missing");
                 }
 
                 var blobServiceClient = new BlobServiceClient(new Uri(storageUrl), _credential);
@@ -96,8 +96,8 @@ namespace EmergencyManagementMCP.Functions
                 stopwatch.Stop();
 
                 // Determine public base URL for viewing links.
-                // Priority: explicit config (RouteLinks:BaseUrl or RouteLinks__BaseUrl) -> WEBSITE_HOSTNAME -> request host.
-                var configuredBase = _configuration["RouteLinks:BaseUrl"] ?? _configuration["RouteLinks__BaseUrl"]; // support both naming styles
+                // Priority: explicit config (RouteLinks:BaseUrl or RouteLinks:BaseUrl) -> WEBSITE_HOSTNAME -> request host.
+                var configuredBase = _configuration["RouteLinks:BaseUrl"] ?? _configuration["RouteLinks:BaseUrl"]; // support both naming styles
                 var websiteHost = Environment.GetEnvironmentVariable("WEBSITE_HOSTNAME");
                 string viewBase;
                 if (!string.IsNullOrWhiteSpace(configuredBase))
@@ -170,10 +170,10 @@ namespace EmergencyManagementMCP.Functions
                 }
 
                 // Get storage account connection
-                var storageUrl = _configuration["Storage__BlobServiceUrl"];
+                var storageUrl = _configuration["Storage:BlobServiceUrl"];
                 if (string.IsNullOrEmpty(storageUrl))
                 {
-                    throw new InvalidOperationException("Storage__BlobServiceUrl configuration is missing");
+                    throw new InvalidOperationException("Storage:BlobServiceUrl configuration is missing");
                 }
 
                 var blobServiceClient = new BlobServiceClient(new Uri(storageUrl), _credential);
