@@ -17,12 +17,14 @@ app.get('/_appconfig.js', (_req, res) => {
   let cs = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING || '';
   let ikey = process.env.APPINSIGHTS_INSTRUMENTATIONKEY || '';
   let apiBase = process.env.API_BASE_URL || '';
+  let mapsClientId = process.env.AZURE_MAPS_CLIENT_ID || '';
 
   // Trim wrapping quotes if any (defensive for mis-set app settings)
   const trimQuotes = (v) => v.replace(/^"+|"+$/g, '');
   cs = trimQuotes(cs.trim());
   ikey = trimQuotes(ikey.trim());
   apiBase = trimQuotes(apiBase.trim());
+  mapsClientId = trimQuotes(mapsClientId.trim());
 
   // Normalize apiBase: remove trailing slashes
   if (apiBase) {
@@ -35,10 +37,11 @@ app.get('/_appconfig.js', (_req, res) => {
   }
 
   const payloadLines = [
-    '// Runtime injected config (telemetry + API base)',
+    '// Runtime injected config (telemetry + API base + Azure Maps)',
     `window.__APPINSIGHTS_INSTRUMENTATION_KEY__ = ${JSON.stringify(ikey)};`,
     `window.__APPINSIGHTS_CONNECTION_STRING__ = ${JSON.stringify(cs)};`,
-    `window.__API_BASE_URL__ = ${JSON.stringify(apiBase)};`
+    `window.__API_BASE_URL__ = ${JSON.stringify(apiBase)};`,
+    `window.__AZURE_MAPS_CLIENT_ID__ = ${JSON.stringify(mapsClientId)};`
   ];
   res.type('application/javascript').send(payloadLines.join('\n'));
 });

@@ -188,6 +188,7 @@ module webApp 'core/host/webapp.bicep' = {
     userAssignedIdentityId: apiUserAssignedIdentity.outputs.identityId
     userAssignedIdentityClientId: apiUserAssignedIdentity.outputs.identityClientId
     apiBaseUrl: 'https://${functionAppName}.azurewebsites.net/api'
+    azureMapsClientId: maps.outputs.clientId
   }
 }
 

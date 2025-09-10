@@ -34,6 +34,9 @@ param userAssignedIdentityClientId string = ''
 @description('Optional public API base URL (e.g., Function App endpoint) to expose to the SPA at runtime.')
 param apiBaseUrl string = ''
 
+@description('Optional Azure Maps Client ID for map rendering.')
+param azureMapsClientId string = ''
+
 // NOTE: Simpler explicit array (leaves empty AI connection string if not provided)
 
 resource webApp 'Microsoft.Web/sites@2023-12-01' = {
@@ -90,6 +93,11 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
           // Expose explicit client ID to disambiguate which managed identity DefaultAzureCredential should use
           name: 'AZURE_CLIENT_ID'
           value: userAssignedIdentityClientId
+        }
+        {
+          // Azure Maps Client ID for frontend map rendering
+          name: 'AZURE_MAPS_CLIENT_ID'
+          value: azureMapsClientId
         }
       ]
       // Configure default documents
