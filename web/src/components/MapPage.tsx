@@ -101,11 +101,8 @@ export default function MapPage() {
   };
 
   const getToken = (): Promise<string> => {
-  // Resolve API base URL with precedence: runtime injected global -> build-time env -> default '/api'
-  const runtimeApiBase = (globalThis as any).__API_BASE_URL__ as string | undefined;
-  const apiBaseUrl = (runtimeApiBase && runtimeApiBase.length > 0 ? runtimeApiBase : import.meta.env.VITE_API_BASE_URL) || '/api';
-    
-    return fetch(`${apiBaseUrl}/maps-token`, { credentials: 'include' })
+    // Token endpoint is handled by the web app itself, not the function app
+    return fetch('/api/maps-token', { credentials: 'include' })
       .then(response => {
         if (!response.ok) {
           throw new Error(`Token request failed: ${response.status} ${response.statusText}`);
