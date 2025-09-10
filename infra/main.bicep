@@ -53,11 +53,8 @@ var deploymentStorageContainerName = 'app-package-${take(functionAppName, 32)}-$
 
 // Web App name with fallback
 var finalWebAppName = !empty(webAppName) ? webAppName : 'doem-${abbrs.webSitesAppService}${resourceToken}'
-
-// Safe optional network output variables (avoid direct conditional module dereference in parameters)
-// Defer referencing optional module outputs until after conditional creation
-var appSubnetId = vnetEnabled ? serviceVirtualNetwork.outputs.appSubnetID : ''
-var peSubnetName = vnetEnabled ? serviceVirtualNetwork.outputs.peSubnetName : ''
+// NOTE: Removed precomputed subnet variables that referenced conditional module outputs to avoid Bicep null access diagnostics.
+// We'll inline conditional dereferencing after the module declaration.
 
 // Organize resources in a resource group
 resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -109,6 +106,23 @@ module webAppServicePlan './core/host/appserviceplan.bicep' = {
   }
 }
 
+// Virtual Network & private endpoint to blob storage (define before resources that may consume its outputs)
+module serviceVirtualNetwork 'app/vnet.bicep' =  if (vnetEnabled) {
+  name: 'serviceVirtualNetwork'
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    vNetName: !empty(vNetName) ? vNetName : 'doem-${abbrs.networkVirtualNetworks}${resourceToken}'
+  }
+}
+// Deterministic subnet identifiers (avoid referencing conditional module outputs directly to satisfy analyzer)
+var vNetResolvedName = !empty(vNetName) ? vNetName : 'doem-${abbrs.networkVirtualNetworks}${resourceToken}'
+@description('App subnet resource ID if VNet integration is enabled, else empty string.')
+var safeAppSubnetId = vnetEnabled ? '/subscriptions/${subscription().subscriptionId}/resourceGroups/${rg.name}/providers/Microsoft.Network/virtualNetworks/${vNetResolvedName}/subnets/app' : ''
+@description('Private endpoint subnet name when VNet enabled.')
+var safePrivateEndpointSubnetName = vnetEnabled ? 'private-endpoints-subnet' : ''
+
 // Azure Maps account for fire-aware routing
 var finalMapsAccountName = !empty(mapsAccountName) ? mapsAccountName : 'doem-maps-${resourceToken}'
 
@@ -149,7 +163,8 @@ module api './app/api.bicep' = {
       Maps__ClientId: maps.outputs.clientId
       ManagedIdentity__ClientId: apiUserAssignedIdentity.outputs.identityClientId
     }
-    virtualNetworkSubnetId: appSubnetId
+    // Only provide subnet ID if VNet is enabled (prevents null-module output dereference)
+  virtualNetworkSubnetId: safeAppSubnetId
   }
 }
 
@@ -222,17 +237,6 @@ module queueRoleAssignmentApi 'app/storage-Access.bicep' = {
   }
 }
 
-// Virtual Network & private endpoint to blob storage
-module serviceVirtualNetwork 'app/vnet.bicep' =  if (vnetEnabled) {
-  name: 'serviceVirtualNetwork'
-  scope: rg
-  params: {
-    location: location
-    tags: tags
-    vNetName: !empty(vNetName) ? vNetName : 'doem-${abbrs.networkVirtualNetworks}${resourceToken}'
-  }
-}
-
 module storagePrivateEndpoint 'app/storage-PrivateEndpoint.bicep' = if (vnetEnabled) {
   name: 'servicePrivateEndpoint'
   scope: rg
@@ -240,7 +244,8 @@ module storagePrivateEndpoint 'app/storage-PrivateEndpoint.bicep' = if (vnetEnab
     location: location
     tags: tags
     virtualNetworkName: !empty(vNetName) ? vNetName : 'doem-${abbrs.networkVirtualNetworks}${resourceToken}'
-    subnetName: peSubnetName
+    // Safe because this module only exists when vnetEnabled is true
+  subnetName: safePrivateEndpointSubnetName
     resourceName: storage.outputs.name
   }
 }
@@ -293,3 +298,7 @@ output AZURE_MAPS_ACCOUNT_NAME string = maps.outputs.name
 output GEO_CACHE_CONTAINER_URI string = 'https://${storage.outputs.name}.blob.${environment().suffixes.storage}/${geoCacheContainerName}'
 output WEB_APP_NAME string = webApp.outputs.webAppName
 output WEB_APP_URL string = webApp.outputs.webAppUrl
+// Standard azd discovery outputs for the 'web' service (needed for azd to deploy static artifacts)
+output SERVICE_WEB_NAME string = webApp.outputs.webAppName
+output SERVICE_WEB_URL string = webApp.outputs.webAppUrl
+output SERVICE_WEB_HOSTNAME string = replace(webApp.outputs.webAppUrl, 'https://', '')

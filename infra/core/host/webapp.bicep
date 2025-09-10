@@ -72,12 +72,10 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
-          value: 'false'
+          // Enable Oryx build so node_modules (e.g., express) are installed during zip deploy
+          value: 'true'
         }
-        {
-          name: 'WEBSITE_RUN_FROM_PACKAGE'
-          value: '1'
-        }
+        // Removed WEBSITE_RUN_FROM_PACKAGE to allow normal static file serving / custom server
       ]
       // Configure default documents
       defaultDocuments: [
