@@ -58,10 +58,10 @@ namespace EmergencyManagementMCP.Functions
                 var linkId = Guid.NewGuid().ToString("N")[..12]; // Shorter ID for friendlier URLs
 
                 // Get storage account connection
-                var storageUrl = _configuration["Storage:BlobServiceUrl"];
+                var storageUrl = _configuration["Storage__BlobServiceUrl"];
                 if (string.IsNullOrEmpty(storageUrl))
                 {
-                    throw new InvalidOperationException("Storage:BlobServiceUrl configuration is missing");
+                    throw new InvalidOperationException("Storage__BlobServiceUrl configuration is missing");
                 }
 
                 var blobServiceClient = new BlobServiceClient(new Uri(storageUrl), _credential);
@@ -170,10 +170,10 @@ namespace EmergencyManagementMCP.Functions
                 }
 
                 // Get storage account connection
-                var storageUrl = _configuration["Storage:BlobServiceUrl"];
+                var storageUrl = _configuration["Storage__BlobServiceUrl"];
                 if (string.IsNullOrEmpty(storageUrl))
                 {
-                    throw new InvalidOperationException("Storage:BlobServiceUrl configuration is missing");
+                    throw new InvalidOperationException("Storage__BlobServiceUrl configuration is missing");
                 }
 
                 var blobServiceClient = new BlobServiceClient(new Uri(storageUrl), _credential);

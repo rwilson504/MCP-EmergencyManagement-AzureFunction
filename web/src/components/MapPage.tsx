@@ -101,11 +101,8 @@ export default function MapPage() {
   };
 
   const getToken = (): Promise<string> => {
-  // Resolve API base URL with precedence: runtime injected global -> build-time env -> default '/api'
-  const runtimeApiBase = (globalThis as any).__API_BASE_URL__ as string | undefined;
-  const apiBaseUrl = (runtimeApiBase && runtimeApiBase.length > 0 ? runtimeApiBase : import.meta.env.VITE_API_BASE_URL) || '/api';
-    
-    return fetch(`${apiBaseUrl}/maps-token`, { credentials: 'include' })
+    // Token endpoint is handled by the web app itself, not the function app
+    return fetch('/api/maps-token', { credentials: 'include' })
       .then(response => {
         if (!response.ok) {
           throw new Error(`Token request failed: ${response.status} ${response.statusText}`);
@@ -123,10 +120,11 @@ export default function MapPage() {
         setLoading(true);
         setError(null);
 
-        // Get Azure Maps Client ID from environment
-        const clientId = import.meta.env.VITE_AZURE_MAPS_CLIENT_ID;
+        // Get Azure Maps Client ID from runtime config with fallback to build-time env
+        const runtimeMapsClientId = (globalThis as any).__AZURE_MAPS_CLIENT_ID__ as string | undefined;
+        const clientId = (runtimeMapsClientId && runtimeMapsClientId.length > 0 ? runtimeMapsClientId : import.meta.env.VITE_AZURE_MAPS_CLIENT_ID);
         if (!clientId) {
-          throw new Error('Azure Maps Client ID not configured. Set VITE_AZURE_MAPS_CLIENT_ID environment variable.');
+          throw new Error('Azure Maps Client ID not configured. Set AZURE_MAPS_CLIENT_ID environment variable or VITE_AZURE_MAPS_CLIENT_ID for local development.');
         }
 
         // Create map with anonymous auth + token callback

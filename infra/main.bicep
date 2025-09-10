@@ -163,8 +163,8 @@ module api './app/api.bicep' = {
       Maps__SearchBase: 'https://atlas.microsoft.com'
       Maps__ClientId: maps.outputs.clientId
       ManagedIdentity__ClientId: apiUserAssignedIdentity.outputs.identityClientId
-      // Base URL for deterministic route link generation so links point at the public web frontend, not the function host
-      // RouteLinks__BaseUrl will be patched post-provision via a separate mechanism to avoid circular dependency
+      // Base URL for route link generation - points to the web app instead of function host
+      RouteLinks__BaseUrl: 'https://${(!empty(webAppName) ? webAppName : finalWebAppName)}.azurewebsites.net'
     }
     // Only provide subnet ID if VNet is enabled (prevents null-module output dereference)
   virtualNetworkSubnetId: safeAppSubnetId
@@ -188,6 +188,7 @@ module webApp 'core/host/webapp.bicep' = {
     userAssignedIdentityId: apiUserAssignedIdentity.outputs.identityId
     userAssignedIdentityClientId: apiUserAssignedIdentity.outputs.identityClientId
     apiBaseUrl: 'https://${functionAppName}.azurewebsites.net/api'
+    azureMapsClientId: maps.outputs.clientId
   }
 }
 

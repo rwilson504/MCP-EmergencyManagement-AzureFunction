@@ -20,7 +20,7 @@ namespace EmergencyManagementMCP.Services
         {
             _httpClient = httpClient;
             _logger = logger;
-            _searchBase = config["Maps:SearchBase"] ?? "https://atlas.microsoft.com";
+            _searchBase = config["Maps__SearchBase"] ?? "https://atlas.microsoft.com";
             _mapsClientId = config["Maps:ClientId"];
             
             // Use ManagedIdentityCredential with specific client ID for Azure Functions
