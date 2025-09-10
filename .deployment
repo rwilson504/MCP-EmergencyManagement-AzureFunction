@@ -1,0 +1,3 @@
+[config]
+# Force Oryx / App Service to treat the web folder as the project root for build & npm install
+project = web

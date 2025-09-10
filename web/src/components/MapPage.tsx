@@ -29,6 +29,33 @@ export default function MapPage() {
   const mapInstanceRef = useRef<atlas.Map | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [debugMode] = useState<boolean>(() => {
+    try {
+      const qp = new URLSearchParams(location.search);
+      return qp.get('debug') === '1' || (globalThis as any).__FORCE_MAP_DEBUG__ === true;
+    } catch {
+      return false;
+    }
+  });
+
+  const t0Ref = useRef<number>(performance.now());
+
+  const debugLog = (...args: any[]) => {
+    if (debugMode) {
+      // eslint-disable-next-line no-console
+      console.log('[MapPage]', ...args);
+    }
+  };
+
+  const warnLog = (...args: any[]) => {
+    // eslint-disable-next-line no-console
+    console.warn('[MapPage]', ...args);
+  };
+
+  const errLog = (...args: any[]) => {
+    // eslint-disable-next-line no-console
+    console.error('[MapPage]', ...args);
+  };
 
   const rectToRing = (s: string): number[][][] => {
     const values = s.match(/-?\d+(\.\d+)?/g);
@@ -43,19 +70,28 @@ export default function MapPage() {
     const qp = new URLSearchParams(location.search);
     const id = qp.get('id');
     
-  // Resolve API base URL with precedence: runtime injected global -> build-time env -> default '/api'
-  const runtimeApiBase = (globalThis as any).__API_BASE_URL__ as string | undefined;
-  const apiBaseUrl = (runtimeApiBase && runtimeApiBase.length > 0 ? runtimeApiBase : import.meta.env.VITE_API_BASE_URL) || '/api';
+    // Resolve API base URL with precedence: runtime injected global -> build-time env -> default '/api'
+    const runtimeApiBase = (globalThis as any).__API_BASE_URL__ as string | undefined;
+    const apiBaseUrl = (runtimeApiBase && runtimeApiBase.length > 0 ? runtimeApiBase : import.meta.env.VITE_API_BASE_URL) || '/api';
+    debugLog('API base resolution', { runtimeApiBase, buildTime: import.meta.env.VITE_API_BASE_URL, final: apiBaseUrl });
     
     if (id) {
       // Short-link flow: fetch from API
-      const response = await fetch(`${apiBaseUrl}/routeLinks/${encodeURIComponent(id)}`, { 
+      const routeUrl = `${apiBaseUrl}/routeLinks/${encodeURIComponent(id)}`;
+      debugLog('Fetching route spec by id', { id, routeUrl });
+      const response = await fetch(routeUrl, { 
         credentials: 'include' 
+      }).catch(err => {
+        errLog('Network error fetching route by id', err);
+        throw err;
       });
       if (!response.ok) {
-        throw new Error(`Failed to fetch route: ${response.status} ${response.statusText}`);
+        const text = await response.text();
+        throw new Error(`Failed to fetch route: ${response.status} ${response.statusText} body=${text}`);
       }
-      return await response.json();
+      const json = await response.json();
+      debugLog('Fetched route spec (short-link)', json);
+      return json;
     }
     
     // Query fallback: build from URL parameters
@@ -80,7 +116,7 @@ export default function MapPage() {
       coordinates: avoidRects.map(rectToRing)
     } : undefined;
     
-    return {
+    const spec: RouteSpec = {
       type: 'FeatureCollection',
       features: [
         {
@@ -98,18 +134,31 @@ export default function MapPage() {
       routeOutputOptions: ['routePath'],
       ...(avoidAreas && { avoidAreas })
     };
+    debugLog('Constructed route spec from query params', spec);
+    return spec;
   };
 
-  const getToken = (): Promise<string> => {
+  const getToken = (label: string = 'token'): Promise<string> => {
+    const started = performance.now();
+    debugLog('Requesting maps token', { label });
     // Token endpoint is handled by the web app itself, not the function app
     return fetch('/api/maps-token', { credentials: 'include' })
       .then(response => {
         if (!response.ok) {
+          warnLog('Token request failed status', { status: response.status, statusText: response.statusText });
           throw new Error(`Token request failed: ${response.status} ${response.statusText}`);
         }
         return response.json();
       })
-      .then(data => data.access_token);
+      .then(data => {
+        const elapsed = (performance.now() - started).toFixed(1);
+        debugLog('Received maps token', { label, ms: elapsed, hasToken: !!data?.access_token, tokenPreview: data?.access_token?.slice(0, 10) + '...' });
+        return data.access_token;
+      })
+      .catch(err => {
+        errLog('Token fetch error', { label, err });
+        throw err;
+      });
   };
 
   useEffect(() => {
@@ -119,6 +168,7 @@ export default function MapPage() {
       try {
         setLoading(true);
         setError(null);
+        debugLog('Initializing map sequence, t+ms', (performance.now() - t0Ref.current).toFixed(1));
 
         // Get Azure Maps Client ID from runtime config with fallback to build-time env
         const runtimeMapsClientId = (globalThis as any).__AZURE_MAPS_CLIENT_ID__ as string | undefined;
@@ -126,6 +176,7 @@ export default function MapPage() {
         if (!clientId) {
           throw new Error('Azure Maps Client ID not configured. Set AZURE_MAPS_CLIENT_ID environment variable or VITE_AZURE_MAPS_CLIENT_ID for local development.');
         }
+        debugLog('Client ID resolved', { runtime: runtimeMapsClientId, build: import.meta.env.VITE_AZURE_MAPS_CLIENT_ID, final: clientId });
 
         // Create map with anonymous auth + token callback
         const map = new atlas.Map(mapRef.current, {
@@ -134,27 +185,53 @@ export default function MapPage() {
             authType: 'anonymous' as atlas.AuthenticationType,
             clientId,
             getToken: (resolve, reject) => {
-              getToken()
-                .then(token => resolve(token))
-                .catch(error => reject(error));
+              getToken('map-auth')
+                .then(token => {
+                  debugLog('Supplying token to map control');
+                  resolve(token);
+                })
+                .catch(error => {
+                  errLog('Map auth token callback failed', error);
+                  reject(error);
+                });
             }
           }
         });
 
         mapInstanceRef.current = map;
 
+        // Register additional event listeners for diagnostics
+        map.events.add('ready', () => debugLog('Map event: ready'));
+        map.events.add('error', (e) => errLog('Map event: error', e));
+        map.events.add('data', (e) => debugLog('Map event: data', { source: (e as any)?.source }));
+
+        // Safety timeout if ready never fires
+        const readyTimeout = setTimeout(() => {
+          if (loading) {
+            warnLog('Map ready event timeout after 8s – container size?', { width: mapRef.current?.clientWidth, height: mapRef.current?.clientHeight });
+          }
+        }, 8000);
+
         // Wait for map to be ready
         await new Promise<void>((resolve) => {
-          map.events.add('ready', () => resolve());
+          map.events.add('ready', () => {
+            clearTimeout(readyTimeout);
+            resolve();
+          });
         });
+        debugLog('Map is ready', { tReadyMs: (performance.now() - t0Ref.current).toFixed(1) });
 
         // Get route specification
-        const spec = await getRouteSpec();
+        const spec = await getRouteSpec().catch(err => {
+            errLog('Failed building route spec', err);
+            throw err;
+        });
 
         // Get token for REST API calls
-        const token = await getToken();
+        const token = await getToken('route-rest');
 
         // Call Azure Maps Route API
+        const routeCallStarted = performance.now();
         const response = await fetch('https://atlas.microsoft.com/route/directions?api-version=2023-01-01', {
           method: 'POST',
           headers: {
@@ -171,11 +248,17 @@ export default function MapPage() {
         }
 
         const routeData = await response.json();
+        debugLog('Route API success', { ms: (performance.now() - routeCallStarted).toFixed(1), features: Array.isArray(routeData?.features) ? routeData.features.length : 'n/a' });
+        if (debugMode) {
+          (globalThis as any).__LAST_ROUTE_DATA__ = routeData;
+          (globalThis as any).__LAST_ROUTE_SPEC__ = spec;
+        }
 
         // Add route to map
         const dataSource = new atlas.source.DataSource();
         map.sources.add(dataSource);
         dataSource.add(routeData);
+        debugLog('Added route data source');
 
         // Add route layer
         const routeLayer = new atlas.layer.LineLayer(dataSource, 'route', {
@@ -184,6 +267,7 @@ export default function MapPage() {
           strokeOpacity: 0.8
         });
         map.layers.add(routeLayer);
+        debugLog('Added route layer');
 
         // Add avoid areas if they exist
         if (spec.avoidAreas) {
@@ -201,6 +285,7 @@ export default function MapPage() {
             strokeWidth: 2
           });
           map.layers.add(avoidLayer);
+          debugLog('Added avoid area polygons', { count: spec.avoidAreas.coordinates.length });
         }
 
         // Add waypoint markers
@@ -215,6 +300,7 @@ export default function MapPage() {
           }
         });
         map.layers.add(waypointLayer);
+        debugLog('Added waypoint layer', { count: spec.features.length });
 
         // Fit map to route bounds
         const bbox = atlas.data.BoundingBox.fromData(routeData);
@@ -223,11 +309,15 @@ export default function MapPage() {
             bounds: bbox as [number, number, number, number], 
             padding: 80 
           });
+          debugLog('Set camera to bounding box', { bbox });
+        } else {
+          warnLog('Bounding box not available or invalid', { bbox });
         }
 
         setLoading(false);
+        debugLog('Map initialization complete', { totalMs: (performance.now() - t0Ref.current).toFixed(1) });
       } catch (err) {
-        console.error('Map initialization error:', err);
+        errLog('Map initialization error', err);
         setError(err instanceof Error ? err.message : 'Failed to initialize map');
         setLoading(false);
       }
@@ -257,7 +347,23 @@ export default function MapPage() {
       <div className="error">
         <h2>Error Loading Map</h2>
         <p>{error}</p>
-        <p>Please check the console for more details.</p>
+        <p>Please check the console for more details.{debugMode && ' (debug mode enabled)'}</p>
+        {debugMode && (
+          <details style={{ marginTop: '1rem' }}>
+            <summary>Debug Environment</summary>
+            <pre style={{ fontSize: '0.75rem', whiteSpace: 'pre-wrap' }}>
+{JSON.stringify({
+  location: location.href,
+  runtimeApiBase: (globalThis as any).__API_BASE_URL__,
+  runtimeMapsClientId: (globalThis as any).__AZURE_MAPS_CLIENT_ID__,
+  buildEnv: {
+    VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+    VITE_AZURE_MAPS_CLIENT_ID: import.meta.env.VITE_AZURE_MAPS_CLIENT_ID
+  }
+}, null, 2)}
+            </pre>
+          </details>
+        )}
       </div>
     );
   }
