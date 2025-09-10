@@ -14,7 +14,7 @@ param environmentName string
   }
 })
 param location string
-param vnetEnabled bool
+param vnetEnabled bool = false
 param apiServiceName string = ''
 param apiUserAssignedIdentityName string = ''
 param applicationInsightsName string = ''
