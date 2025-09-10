@@ -60,6 +60,8 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
       use32BitWorkerProcess: false
       webSocketsEnabled: false
       managedPipelineMode: 'Integrated'
+      // Specify startup command to ensure the web app starts with the correct server
+      appCommandLine: 'npm start'
       // Configure app settings (runtime + optional App Insights + deployment behavior)
       appSettings: [
         {
@@ -83,6 +85,21 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
           name: 'SCM_DO_BUILD_DURING_DEPLOYMENT'
           // Enable Oryx build so node_modules (e.g., express) are installed during zip deploy
           value: 'true'
+        }
+        {
+          name: 'ENABLE_ORYX_BUILD'
+          // Explicitly enable Oryx build for Node.js applications
+          value: 'true'
+        }
+        {
+          name: 'BUILD_FLAGS'
+          // Additional build flags for Oryx to ensure proper Node.js build
+          value: 'UseAppServiceBuild=true'
+        }
+        {
+          name: 'PROJECT'
+          // Specify the project path for Oryx build (relative to repository root)
+          value: 'web'
         }
         // Removed WEBSITE_RUN_FROM_PACKAGE to allow normal static file serving / custom server
         {
@@ -143,6 +160,22 @@ resource webAppDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-pre
       }
       {
         category: 'AppServicePlatformLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+      {
+        category: 'AppServiceIPSecAuditLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+      {
+        category: 'AppServiceAuditLogs'
         enabled: true
         retentionPolicy: {
           enabled: false

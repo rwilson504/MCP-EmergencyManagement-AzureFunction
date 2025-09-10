@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && node copy-server.js",
     "start": "node server.js",
     "postinstall": "npm run build",
     "preview": "vite preview"
