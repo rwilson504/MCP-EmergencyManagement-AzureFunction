@@ -334,24 +334,46 @@ export default function MapPage() {
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="loading">
-        Loading map...
-      </div>
-    );
-  }
+  // Always render the map container so the ref exists on first effect run.
+  // Present loading and error states as overlays instead of replacing the container (prevents null ref issue).
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100vh' }} aria-label="Emergency Management Route Map Wrapper">
+      <div
+        ref={mapRef}
+        style={{ width: '100%', height: '100%', background: '#0f172a' }}
+        aria-label="Emergency Management Route Map"
+      />
 
-  if (error) {
-    return (
-      <div className="error">
-        <h2>Error Loading Map</h2>
-        <p>{error}</p>
-        <p>Please check the console for more details.{debugMode && ' (debug mode enabled)'}</p>
-        {debugMode && (
-          <details style={{ marginTop: '1rem' }}>
-            <summary>Debug Environment</summary>
-            <pre style={{ fontSize: '0.75rem', whiteSpace: 'pre-wrap' }}>
+      {loading && (
+        <div
+          style={{
+            position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.55)',
+            color: '#fff', backdropFilter: 'blur(2px)', fontSize: '1.1rem'
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          <div style={{ marginBottom: '0.75rem' }}>Loading map…</div>
+          <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Initializing Azure Maps & route data</div>
+        </div>
+      )}
+
+      {error && (
+        <div
+          style={{
+            position: 'absolute', inset: 0, overflow: 'auto', padding: '1.25rem',
+            background: 'rgba(31,41,55,0.9)', color: '#fff'
+          }}
+          role="alert"
+        >
+          <h2 style={{ marginTop: 0 }}>Error Loading Map</h2>
+            <p style={{ marginTop: 0 }}>{error}</p>
+            <p>Please check the console for more details.{debugMode && ' (debug mode enabled)'}</p>
+            {debugMode && (
+              <details style={{ marginTop: '1rem' }} open>
+                <summary style={{ cursor: 'pointer' }}>Debug Environment</summary>
+                <pre style={{ fontSize: '0.7rem', whiteSpace: 'pre-wrap', background: '#1e293b', padding: '0.75rem', borderRadius: 6 }}>
 {JSON.stringify({
   location: location.href,
   runtimeApiBase: (globalThis as any).__API_BASE_URL__,
@@ -361,18 +383,11 @@ export default function MapPage() {
     VITE_AZURE_MAPS_CLIENT_ID: import.meta.env.VITE_AZURE_MAPS_CLIENT_ID
   }
 }, null, 2)}
-            </pre>
-          </details>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div 
-      ref={mapRef} 
-      style={{ width: '100%', height: '100vh' }}
-      aria-label="Emergency Management Route Map"
-    />
+                </pre>
+              </details>
+            )}
+        </div>
+      )}
+    </div>
   );
 }
