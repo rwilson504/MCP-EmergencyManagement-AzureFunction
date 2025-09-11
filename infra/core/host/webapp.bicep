@@ -38,7 +38,10 @@ param apiBaseUrl string = ''
 param azureMapsClientId string = ''
 
 @description('Revision marker to force app settings redeployment when incremented.')
-param appSettingsRevision string = '2025-09-10.1'
+param appSettingsRevision string = '2025-09-11.2'
+
+@description('Additional application settings to merge (e.g., logging related). Baseline keys here win on conflicts.')
+param extraAppSettings object = {}
 
 // NOTE: Simpler explicit array (leaves empty AI connection string if not provided)
 
@@ -47,12 +50,14 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
   location: location
   tags: union(tags, { 'azd-service-name': serviceName })
   kind: 'app,linux'
-  identity: !empty(userAssignedIdentityId) ? {
-    type: 'UserAssigned'
-    userAssignedIdentities: {
-      '${userAssignedIdentityId}': {}
-    }
-  } : null
+  identity: !empty(userAssignedIdentityId)
+    ? {
+        type: 'UserAssigned'
+        userAssignedIdentities: {
+          '${userAssignedIdentityId}': {}
+        }
+      }
+    : null
   properties: {
     serverFarmId: appServicePlanId
     siteConfig: {
@@ -79,20 +84,24 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
 resource webAppAppSettings 'Microsoft.Web/sites/config@2023-12-01' = {
   name: 'appsettings'
   parent: webApp
-  properties: {
+  // Merge caller-provided extraAppSettings FIRST so baseline values below override on key conflict
+  properties: union(extraAppSettings, {
     WEBSITE_NODE_DEFAULT_VERSION: nodeVersion
     APP_NODE_VERSION: nodeVersion
     APPLICATIONINSIGHTS_CONNECTION_STRING: applicationInsightsConnectionString
-    APPINSIGHTS_INSTRUMENTATIONKEY: empty(applicationInsightsConnectionString) ? '' : split(split(applicationInsightsConnectionString, ';')[0], '=')[1]
+    APPINSIGHTS_INSTRUMENTATIONKEY: empty(applicationInsightsConnectionString)
+      ? ''
+      : split(split(applicationInsightsConnectionString, ';')[0], '=')[1]
     SCM_DO_BUILD_DURING_DEPLOYMENT: 'true'
     ENABLE_ORYX_BUILD: 'true'
     BUILD_FLAGS: 'UseAppServiceBuild=true'
-    PROJECT: 'web'
+    // Explicit build command ensures deterministic install+build and avoids PROJECT path ambiguity
+    ORYX_BUILD_COMMAND: 'npm ci && npm run build'
     API_BASE_URL: apiBaseUrl
     AZURE_CLIENT_ID: userAssignedIdentityClientId
     AZURE_MAPS_CLIENT_ID: azureMapsClientId
     APP_SETTINGS_REVISION: appSettingsRevision
-  }
+  })
 }
 
 // Diagnostic settings to route Web App logs & metrics to Log Analytics (if workspace provided)

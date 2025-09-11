@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "15814086938948579890"
+      "templateHash": "4360861675053095464"
     }
   },
   "parameters": {
@@ -1237,6 +1237,13 @@
           },
           "azureMapsClientId": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'maps'), '2022-09-01').outputs.clientId.value]"
+          },
+          "extraAppSettings": {
+            "value": {
+              "WEBSITES_ENABLE_APP_SERVICE_STORAGE": "true",
+              "DOCKER_ENABLE_CI": "true",
+              "WEBSITES_CONTAINER_START_TIME_LIMIT": "1800"
+            }
           }
         },
         "template": {
@@ -1246,7 +1253,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "13170648549857784847"
+              "templateHash": "6772103581401495136"
             }
           },
           "parameters": {
@@ -1340,9 +1347,16 @@
             },
             "appSettingsRevision": {
               "type": "string",
-              "defaultValue": "2025-09-10.1",
+              "defaultValue": "2025-09-11.1",
               "metadata": {
                 "description": "Revision marker to force app settings redeployment when incremented."
+              }
+            },
+            "extraAppSettings": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Additional application settings to merge (e.g., logging related). Baseline keys here win on conflicts."
               }
             }
           },
@@ -1378,20 +1392,7 @@
               "type": "Microsoft.Web/sites/config",
               "apiVersion": "2023-12-01",
               "name": "[format('{0}/{1}', parameters('name'), 'appsettings')]",
-              "properties": {
-                "WEBSITE_NODE_DEFAULT_VERSION": "[parameters('nodeVersion')]",
-                "APP_NODE_VERSION": "[parameters('nodeVersion')]",
-                "APPLICATIONINSIGHTS_CONNECTION_STRING": "[parameters('applicationInsightsConnectionString')]",
-                "APPINSIGHTS_INSTRUMENTATIONKEY": "[if(empty(parameters('applicationInsightsConnectionString')), '', split(split(parameters('applicationInsightsConnectionString'), ';')[0], '=')[1])]",
-                "SCM_DO_BUILD_DURING_DEPLOYMENT": "true",
-                "ENABLE_ORYX_BUILD": "true",
-                "BUILD_FLAGS": "UseAppServiceBuild=true",
-                "PROJECT": "web",
-                "API_BASE_URL": "[parameters('apiBaseUrl')]",
-                "AZURE_CLIENT_ID": "[parameters('userAssignedIdentityClientId')]",
-                "AZURE_MAPS_CLIENT_ID": "[parameters('azureMapsClientId')]",
-                "APP_SETTINGS_REVISION": "[parameters('appSettingsRevision')]"
-              },
+              "properties": "[union(parameters('extraAppSettings'), createObject('WEBSITE_NODE_DEFAULT_VERSION', parameters('nodeVersion'), 'APP_NODE_VERSION', parameters('nodeVersion'), 'APPLICATIONINSIGHTS_CONNECTION_STRING', parameters('applicationInsightsConnectionString'), 'APPINSIGHTS_INSTRUMENTATIONKEY', if(empty(parameters('applicationInsightsConnectionString')), '', split(split(parameters('applicationInsightsConnectionString'), ';')[0], '=')[1]), 'SCM_DO_BUILD_DURING_DEPLOYMENT', 'true', 'ENABLE_ORYX_BUILD', 'true', 'BUILD_FLAGS', 'UseAppServiceBuild=true', 'PROJECT', 'web', 'API_BASE_URL', parameters('apiBaseUrl'), 'AZURE_CLIENT_ID', parameters('userAssignedIdentityClientId'), 'AZURE_MAPS_CLIENT_ID', parameters('azureMapsClientId'), 'APP_SETTINGS_REVISION', parameters('appSettingsRevision')))]",
               "dependsOn": [
                 "[resourceId('Microsoft.Web/sites', parameters('name'))]"
               ]

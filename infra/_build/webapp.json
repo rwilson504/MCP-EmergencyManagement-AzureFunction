@@ -1,0 +1,250 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.37.4.10188",
+      "templateHash": "13170648549857784847"
+    }
+  },
+  "parameters": {
+    "name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Web App"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for the Web App"
+      }
+    },
+    "appServicePlanId": {
+      "type": "string",
+      "metadata": {
+        "description": "App Service Plan ID"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Tags to apply to the Web App"
+      }
+    },
+    "linuxFxVersion": {
+      "type": "string",
+      "defaultValue": "NODE|22-lts",
+      "metadata": {
+        "description": "Runtime stack for the web app"
+      }
+    },
+    "nodeVersion": {
+      "type": "string",
+      "defaultValue": "22.11.0",
+      "metadata": {
+        "description": "Node.js version used for App Service environment (WEBSITE_NODE_DEFAULT_VERSION / APP_NODE_VERSION)."
+      }
+    },
+    "serviceName": {
+      "type": "string",
+      "defaultValue": "web",
+      "metadata": {
+        "description": "Service name for AZD tagging"
+      }
+    },
+    "applicationInsightsConnectionString": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Application Insights connection string to enable client/server telemetry correlation."
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Log Analytics Workspace Resource ID to send platform & application logs."
+      }
+    },
+    "userAssignedIdentityId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional user-assigned managed identity resource ID to attach to the Web App."
+      }
+    },
+    "userAssignedIdentityClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional user-assigned managed identity client ID (exposed to runtime as AZURE_CLIENT_ID for DefaultAzureCredential)."
+      }
+    },
+    "apiBaseUrl": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional public API base URL (e.g., Function App endpoint) to expose to the SPA at runtime."
+      }
+    },
+    "azureMapsClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Azure Maps Client ID for map rendering."
+      }
+    },
+    "appSettingsRevision": {
+      "type": "string",
+      "defaultValue": "2025-09-10.1",
+      "metadata": {
+        "description": "Revision marker to force app settings redeployment when incremented."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2023-12-01",
+      "name": "[parameters('name')]",
+      "location": "[parameters('location')]",
+      "tags": "[union(parameters('tags'), createObject('azd-service-name', parameters('serviceName')))]",
+      "kind": "app,linux",
+      "identity": "[if(not(empty(parameters('userAssignedIdentityId'))), createObject('type', 'UserAssigned', 'userAssignedIdentities', createObject(format('{0}', parameters('userAssignedIdentityId')), createObject())), null())]",
+      "properties": {
+        "serverFarmId": "[parameters('appServicePlanId')]",
+        "siteConfig": {
+          "linuxFxVersion": "[parameters('linuxFxVersion')]",
+          "ftpsState": "FtpsOnly",
+          "minTlsVersion": "1.2",
+          "scmMinTlsVersion": "1.2",
+          "use32BitWorkerProcess": false,
+          "webSocketsEnabled": false,
+          "managedPipelineMode": "Integrated",
+          "appCommandLine": "npm start",
+          "defaultDocuments": [
+            "index.html"
+          ]
+        },
+        "httpsOnly": true,
+        "clientAffinityEnabled": false
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2023-12-01",
+      "name": "[format('{0}/{1}', parameters('name'), 'appsettings')]",
+      "properties": {
+        "WEBSITE_NODE_DEFAULT_VERSION": "[parameters('nodeVersion')]",
+        "APP_NODE_VERSION": "[parameters('nodeVersion')]",
+        "APPLICATIONINSIGHTS_CONNECTION_STRING": "[parameters('applicationInsightsConnectionString')]",
+        "APPINSIGHTS_INSTRUMENTATIONKEY": "[if(empty(parameters('applicationInsightsConnectionString')), '', split(split(parameters('applicationInsightsConnectionString'), ';')[0], '=')[1])]",
+        "SCM_DO_BUILD_DURING_DEPLOYMENT": "true",
+        "ENABLE_ORYX_BUILD": "true",
+        "BUILD_FLAGS": "UseAppServiceBuild=true",
+        "PROJECT": "web",
+        "API_BASE_URL": "[parameters('apiBaseUrl')]",
+        "AZURE_CLIENT_ID": "[parameters('userAssignedIdentityClientId')]",
+        "AZURE_MAPS_CLIENT_ID": "[parameters('azureMapsClientId')]",
+        "APP_SETTINGS_REVISION": "[parameters('appSettingsRevision')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.Web/sites/{0}', parameters('name'))]",
+      "name": "webapp-logs",
+      "properties": {
+        "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+        "logs": [
+          {
+            "category": "AppServiceHTTPLogs",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": false,
+              "days": 0
+            }
+          },
+          {
+            "category": "AppServiceConsoleLogs",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": false,
+              "days": 0
+            }
+          },
+          {
+            "category": "AppServiceAppLogs",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": false,
+              "days": 0
+            }
+          },
+          {
+            "category": "AppServicePlatformLogs",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": false,
+              "days": 0
+            }
+          },
+          {
+            "category": "AppServiceIPSecAuditLogs",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": false,
+              "days": 0
+            }
+          },
+          {
+            "category": "AppServiceAuditLogs",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": false,
+              "days": 0
+            }
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": false,
+              "days": 0
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "webAppName": {
+      "type": "string",
+      "value": "[parameters('name')]"
+    },
+    "webAppId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+    },
+    "defaultHostname": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2023-12-01').defaultHostName]"
+    },
+    "webAppUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.Web/sites', parameters('name')), '2023-12-01').defaultHostName)]"
+    }
+  }
+}

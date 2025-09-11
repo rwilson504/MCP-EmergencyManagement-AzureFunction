@@ -45,9 +45,12 @@ param webAppName string = ''
 @description('Runtime stack for the web app (Node LTS)')
 param linuxFxVersion string = 'NODE|22-lts'
 
+@description('Revision marker for infrastructure template; bump to force re-provision of otherwise unchanged resources.')
+param templateRevision string = '2025-09-10.1'
+
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
-var tags = { 'azd-env-name': environmentName }
+var tags = { 'azd-env-name': environmentName, 'template-revision': templateRevision }
 var functionAppName = !empty(apiServiceName) ? apiServiceName : 'doem-${abbrs.webSitesFunctions}api-${resourceToken}'
 var deploymentStorageContainerName = 'app-package-${take(functionAppName, 32)}-${take(toLower(uniqueString(functionAppName, resourceToken)), 7)}'
 
@@ -189,6 +192,12 @@ module webApp 'core/host/webapp.bicep' = {
     userAssignedIdentityClientId: apiUserAssignedIdentity.outputs.identityClientId
     apiBaseUrl: 'https://${functionAppName}.azurewebsites.net/api'
     azureMapsClientId: maps.outputs.clientId
+    extraAppSettings: {
+      // Consolidated from former duplicate dockerContainerLogging appsettings resource
+      WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'true'
+      DOCKER_ENABLE_CI: 'true'
+      WEBSITES_CONTAINER_START_TIME_LIMIT: '1800'
+    }
   }
 }
 
@@ -198,15 +207,9 @@ module webAppContainerLogging 'core/monitor/container-logs.bicep' = {
   scope: rg
   params: {
     webAppName: webApp.outputs.webAppName
-    resourceGroupName: rg.name
-    logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
     enableContainerLogging: true
     logLevel: 'Verbose'
   }
-  dependsOn: [
-    webApp
-    monitoring
-  ]
 }
 
 // (CORS applied via api module's additionalCorsOrigins param above; no separate config resource needed)
@@ -317,3 +320,4 @@ output WEB_APP_URL string = webApp.outputs.webAppUrl
 output SERVICE_WEB_NAME string = webApp.outputs.webAppName
 output SERVICE_WEB_URL string = webApp.outputs.webAppUrl
 output SERVICE_WEB_HOSTNAME string = replace(webApp.outputs.webAppUrl, 'https://', '')
+output TEMPLATE_REVISION string = templateRevision
