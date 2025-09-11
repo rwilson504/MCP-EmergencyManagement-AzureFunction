@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Azure.Storage.Blobs;
 using Azure.Storage.Sas;
+using Azure.Core;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Configuration;
@@ -16,13 +17,43 @@ namespace EmergencyManagementMCP.Functions
     {
         private readonly ILogger<RouteLinksFunction> _logger;
         private readonly IConfiguration _configuration;
-        private readonly DefaultAzureCredential _credential;
+    private readonly TokenCredential _credential;
 
         public RouteLinksFunction(ILogger<RouteLinksFunction> logger, IConfiguration configuration)
         {
             _logger = logger;
             _configuration = configuration;
-            _credential = new DefaultAzureCredential();
+
+            // Prefer an explicitly configured user-assigned managed identity client id if provided.
+            var userAssignedClientId = _configuration["ManagedIdentity:ClientId"]
+                                        ?? Environment.GetEnvironmentVariable("ManagedIdentity:ClientId");
+
+            if (!string.IsNullOrWhiteSpace(userAssignedClientId))
+            {
+                _credential = new ManagedIdentityCredential(userAssignedClientId);
+                _logger.LogInformation("RouteLinksFunction using user-assigned managed identity clientId={ClientId}", userAssignedClientId);
+            }
+            else
+            {
+                // Fall back to default chain (will use system-assigned if available)
+                _credential = new DefaultAzureCredential();
+                _logger.LogInformation("RouteLinksFunction using DefaultAzureCredential (no explicit user-assigned client id provided)");
+            }
+
+            // Proactive diagnostic: attempt a lightweight token acquisition for Storage scope (non-fatal if it fails)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                    var token = await _credential.GetTokenAsync(new TokenRequestContext(new[] { "https://storage.azure.com/.default" }), cts.Token);
+                    _logger.LogDebug("Managed identity token acquired for storage. ExpiresOn={ExpiresOn:O}", token.ExpiresOn);
+                }
+                catch (Exception diagEx)
+                {
+                    _logger.LogWarning(diagEx, "Initial managed identity token acquisition failed during function startup. This may be transient right after deployment.");
+                }
+            });
         }
 
         [Function("CreateRouteLink")]

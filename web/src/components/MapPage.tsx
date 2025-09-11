@@ -243,7 +243,7 @@ export default function MapPage() {
 
         // Call Azure Maps Route API
         const routeCallStarted = performance.now();
-        const response = await fetch('https://atlas.microsoft.com/route/directions?api-version=2023-01-01', {
+        const response = await fetch('https://atlas.microsoft.com/route/directions?api-version=1.0', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/geo+json',
