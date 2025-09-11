@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.37.4.10188",
-      "templateHash": "4360861675053095464"
+      "templateHash": "5446191932442334211"
     }
   },
   "parameters": {
@@ -1253,7 +1253,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "6772103581401495136"
+              "templateHash": "8780848443746382894"
             }
           },
           "parameters": {
@@ -1347,7 +1347,7 @@
             },
             "appSettingsRevision": {
               "type": "string",
-              "defaultValue": "2025-09-11.1",
+              "defaultValue": "2025-09-11.2",
               "metadata": {
                 "description": "Revision marker to force app settings redeployment when incremented."
               }
@@ -1392,7 +1392,7 @@
               "type": "Microsoft.Web/sites/config",
               "apiVersion": "2023-12-01",
               "name": "[format('{0}/{1}', parameters('name'), 'appsettings')]",
-              "properties": "[union(parameters('extraAppSettings'), createObject('WEBSITE_NODE_DEFAULT_VERSION', parameters('nodeVersion'), 'APP_NODE_VERSION', parameters('nodeVersion'), 'APPLICATIONINSIGHTS_CONNECTION_STRING', parameters('applicationInsightsConnectionString'), 'APPINSIGHTS_INSTRUMENTATIONKEY', if(empty(parameters('applicationInsightsConnectionString')), '', split(split(parameters('applicationInsightsConnectionString'), ';')[0], '=')[1]), 'SCM_DO_BUILD_DURING_DEPLOYMENT', 'true', 'ENABLE_ORYX_BUILD', 'true', 'BUILD_FLAGS', 'UseAppServiceBuild=true', 'PROJECT', 'web', 'API_BASE_URL', parameters('apiBaseUrl'), 'AZURE_CLIENT_ID', parameters('userAssignedIdentityClientId'), 'AZURE_MAPS_CLIENT_ID', parameters('azureMapsClientId'), 'APP_SETTINGS_REVISION', parameters('appSettingsRevision')))]",
+              "properties": "[union(parameters('extraAppSettings'), createObject('WEBSITE_NODE_DEFAULT_VERSION', parameters('nodeVersion'), 'APP_NODE_VERSION', parameters('nodeVersion'), 'APPLICATIONINSIGHTS_CONNECTION_STRING', parameters('applicationInsightsConnectionString'), 'APPINSIGHTS_INSTRUMENTATIONKEY', if(empty(parameters('applicationInsightsConnectionString')), '', split(split(parameters('applicationInsightsConnectionString'), ';')[0], '=')[1]), 'SCM_DO_BUILD_DURING_DEPLOYMENT', 'true', 'ENABLE_ORYX_BUILD', 'true', 'BUILD_FLAGS', 'UseAppServiceBuild=true', 'ORYX_BUILD_COMMAND', 'npm ci && npm run build', 'API_BASE_URL', parameters('apiBaseUrl'), 'AZURE_CLIENT_ID', parameters('userAssignedIdentityClientId'), 'AZURE_MAPS_CLIENT_ID', parameters('azureMapsClientId'), 'APP_SETTINGS_REVISION', parameters('appSettingsRevision')))]",
               "dependsOn": [
                 "[resourceId('Microsoft.Web/sites', parameters('name'))]"
               ]
@@ -1513,12 +1513,6 @@
           "webAppName": {
             "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'webapp'), '2022-09-01').outputs.webAppName.value]"
           },
-          "resourceGroupName": {
-            "value": "[if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))]"
-          },
-          "logAnalyticsWorkspaceId": {
-            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'monitoring'), '2022-09-01').outputs.logAnalyticsWorkspaceId.value]"
-          },
           "enableContainerLogging": {
             "value": true
           },
@@ -1533,7 +1527,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "8160049469983820822"
+              "templateHash": "6440464617348684105"
             }
           },
           "parameters": {
@@ -1541,18 +1535,6 @@
               "type": "string",
               "metadata": {
                 "description": "The name of the web app to configure container logging for"
-              }
-            },
-            "resourceGroupName": {
-              "type": "string",
-              "metadata": {
-                "description": "The resource group where the web app is located"
-              }
-            },
-            "logAnalyticsWorkspaceId": {
-              "type": "string",
-              "metadata": {
-                "description": "The Log Analytics workspace ID to send container logs to"
               }
             },
             "enableContainerLogging": {
@@ -1605,20 +1587,6 @@
                   "enabled": true
                 }
               }
-            },
-            {
-              "condition": "[parameters('enableContainerLogging')]",
-              "type": "Microsoft.Web/sites/config",
-              "apiVersion": "2023-12-01",
-              "name": "[format('{0}/{1}', parameters('webAppName'), 'appsettings')]",
-              "properties": {
-                "WEBSITES_ENABLE_APP_SERVICE_STORAGE": "true",
-                "DOCKER_ENABLE_CI": "true",
-                "WEBSITES_CONTAINER_START_TIME_LIMIT": "1800"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Web/sites/config', parameters('webAppName'), 'logs')]"
-              ]
             }
           ],
           "outputs": {
@@ -1634,7 +1602,6 @@
         }
       },
       "dependsOn": [
-        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'monitoring')]",
         "[subscriptionResourceId('Microsoft.Resources/resourceGroups', if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName'))))]",
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, if(not(empty(parameters('resourceGroupName'))), parameters('resourceGroupName'), format('doem-{0}{1}', variables('abbrs').resourcesResourceGroups, parameters('environmentName')))), 'Microsoft.Resources/deployments', 'webapp')]"
       ]
@@ -1683,7 +1650,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.37.4.10188",
-              "templateHash": "8758117216582193775"
+              "templateHash": "8738388574568673387"
             }
           },
           "parameters": {
@@ -1714,6 +1681,13 @@
               "type": "array",
               "defaultValue": []
             },
+            "addLinksContainer": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "If true, creates the links container (only if not already listed in containers param)."
+              }
+            },
             "kind": {
               "type": "string",
               "defaultValue": "StorageV2"
@@ -1736,13 +1710,22 @@
               }
             }
           },
+          "variables": {
+            "copy": [
+              {
+                "name": "linkNames",
+                "count": "[length(parameters('containers'))]",
+                "input": "[parameters('containers')[copyIndex('linkNames')].name]"
+              }
+            ],
+            "hasLinksContainer": "[contains(variables('linkNames'), 'links')]"
+          },
           "resources": [
             {
               "copy": {
                 "name": "storage::blobServices::container",
                 "count": "[length(parameters('containers'))]"
               },
-              "condition": "[not(empty(parameters('containers')))]",
               "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
               "apiVersion": "2023-01-01",
               "name": "[format('{0}/{1}/{2}', parameters('name'), 'default', parameters('containers')[copyIndex()].name)]",
@@ -1754,7 +1737,18 @@
               ]
             },
             {
-              "condition": "[not(empty(parameters('containers')))]",
+              "condition": "[and(parameters('addLinksContainer'), not(variables('hasLinksContainer')))]",
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}/{2}', parameters('name'), 'default', 'links')]",
+              "properties": {
+                "publicAccess": "None"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('name'), 'default')]"
+              ]
+            },
+            {
               "type": "Microsoft.Storage/storageAccounts/blobServices",
               "apiVersion": "2023-01-01",
               "name": "[format('{0}/{1}', parameters('name'), 'default')]",

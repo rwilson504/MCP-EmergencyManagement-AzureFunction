@@ -97,18 +97,13 @@ namespace EmergencyManagementMCP.Functions
                 stopwatch.Stop();
 
                 // Determine public base URL for viewing links.
-                // Priority: explicit config (RouteLinks:BaseUrl or RouteLinks:BaseUrl) -> WEBSITE_HOSTNAME -> request host.
-                var configuredBase = _configuration["RouteLinks:BaseUrl"] ?? _configuration["RouteLinks:BaseUrl"]; // support both naming styles
-                var websiteHost = Environment.GetEnvironmentVariable("WEBSITE_HOSTNAME");
+                // Priority: explicit config (RouteLinks:BaseUrl or RouteLinks:BaseUrl) request host.
+                var configuredBase = _configuration["RouteLinks:BaseUrl"] ?? _configuration["RouteLinks:BaseUrl"]; // support both naming styles                
                 string viewBase;
                 if (!string.IsNullOrWhiteSpace(configuredBase))
                 {
                     viewBase = configuredBase.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? configuredBase : $"https://{configuredBase}";
-                }
-                else if (!string.IsNullOrWhiteSpace(websiteHost))
-                {
-                    viewBase = $"https://{websiteHost}";
-                }
+                }                
                 else
                 {
                     // Fall back to request URL (likely local dev)
@@ -179,25 +174,94 @@ namespace EmergencyManagementMCP.Functions
                     var referer = refererValues.FirstOrDefault();
                     if (!string.IsNullOrEmpty(referer))
                     {
-                        var refererUri = new Uri(referer);
-                        var allowedHosts = new[] { 
-                            "localhost", 
-                            "127.0.0.1",
-                            Environment.GetEnvironmentVariable("WEBSITE_HOSTNAME")?.ToLowerInvariant()
-                        }.Where(h => !string.IsNullOrEmpty(h)).ToArray();
-                        
-                        var isValidReferer = allowedHosts.Any(host => 
-                            refererUri.Host.Equals(host, StringComparison.OrdinalIgnoreCase) ||
-                            refererUri.Host.EndsWith($".{host}", StringComparison.OrdinalIgnoreCase));
-                            
-                        if (!isValidReferer)
+                        Uri? refererUri = null;
+                        try
                         {
-                            _logger.LogWarning("Invalid referer for public route link access: {LinkId}, referer={Referer}, requestId={RequestId}", 
-                                id, referer, requestId);
-                            var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
-                            await forbidden.WriteAsJsonAsync(new { error = "Access not allowed from this origin", requestId });
-                            return forbidden;
+                            refererUri = new Uri(referer);
                         }
+                        catch (Exception uriEx)
+                        {
+                            _logger.LogWarning(uriEx, "Referer parse failed: raw={RawReferer}, linkId={LinkId}, requestId={RequestId}", referer, id, requestId);
+                        }
+
+                        // Retrieve configured base (supports full URL or hostname). Prefer configuration binding over raw env to allow standard __ mapping.
+                        var rawConfigured = _configuration["RouteLinks:BaseUrl"] ?? Environment.GetEnvironmentVariable("RouteLinks:BaseUrl");
+                        var hostExtractions = new List<string>();
+                        if (!string.IsNullOrWhiteSpace(rawConfigured))
+                        {
+                            // Support comma/semicolon separated list if user provides multiple
+                            var parts = rawConfigured.Split(new[]{',',';'}, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                            foreach (var part in parts)
+                            {
+                                var candidate = part.Trim();
+                                if (candidate.Length == 0) continue;
+
+                                // If missing scheme but contains a slash, assume https:// for parsing
+                                string toParse = candidate;
+                                if (!candidate.Contains("://", StringComparison.Ordinal) && candidate.Contains('/'))
+                                {
+                                    toParse = "https://" + candidate;
+                                }
+
+                                if (Uri.TryCreate(toParse, UriKind.Absolute, out var parsedUri))
+                                {
+                                    hostExtractions.Add(parsedUri.Host.ToLowerInvariant());
+                                }
+                                else
+                                {
+                                    // Strip any trailing path if present (e.g. host/path)
+                                    var slashIndex = candidate.IndexOf('/');
+                                    var hostOnly = (slashIndex > 0 ? candidate[..slashIndex] : candidate).ToLowerInvariant();
+                                    // Remove port if supplied (host:port)
+                                    var colonIndex = hostOnly.IndexOf(':');
+                                    if (colonIndex > -1)
+                                    {
+                                        hostOnly = hostOnly[..colonIndex];
+                                    }
+                                    hostExtractions.Add(hostOnly);
+                                }
+                            }
+                        }
+
+                        var allowedHosts = new[]{"localhost","127.0.0.1"}
+                            .Concat(hostExtractions)
+                            .Where(h => !string.IsNullOrWhiteSpace(h))
+                            .Select(h => h!)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToArray();
+
+                        _logger.LogDebug("Referer host extraction: rawConfigured={RawConfigured}, extractedHosts={Extracted}", rawConfigured, string.Join(',', hostExtractions));
+
+                        if (refererUri != null)
+                        {
+                            // Per-host evaluation logging
+                            foreach (var host in allowedHosts)
+                            {
+                                var hostMatch = refererUri.Host.Equals(host, StringComparison.OrdinalIgnoreCase) ||
+                                                refererUri.Host.EndsWith($".{host}", StringComparison.OrdinalIgnoreCase);
+                                _logger.LogDebug("Referer check detail: linkId={LinkId}, requestId={RequestId}, refererHost={RefererHost}, candidateHost={Candidate}, matched={Matched}", id, requestId, refererUri.Host, host, hostMatch);
+                            }
+
+                            var isValidReferer = allowedHosts.Any(host =>
+                                refererUri.Host.Equals(host, StringComparison.OrdinalIgnoreCase) ||
+                                refererUri.Host.EndsWith($".{host}", StringComparison.OrdinalIgnoreCase));
+
+                            _logger.LogDebug("Referer validation summary: linkId={LinkId}, requestId={RequestId}, referer={Referer}, host={RefererHost}, allowedHosts={Allowed}, valid={Valid}",
+                                id, requestId, referer, refererUri.Host, string.Join(',', allowedHosts), isValidReferer);
+
+                            if (!isValidReferer)
+                            {
+                                _logger.LogWarning("Invalid referer for public route link access: {LinkId}, referer={Referer}, allowedHosts={Allowed}, requestId={RequestId}",
+                                    id, referer, string.Join(',', allowedHosts), requestId);
+                                var forbidden = req.CreateResponse(HttpStatusCode.Forbidden);
+                                await forbidden.WriteAsJsonAsync(new { error = "Access not allowed from this origin", requestId });
+                                return forbidden;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogDebug("Referer header was present but empty/null: linkId={LinkId}, requestId={RequestId}", id, requestId);
                     }
                 }
 
@@ -252,34 +316,63 @@ namespace EmergencyManagementMCP.Functions
                 var response = req.CreateResponse(HttpStatusCode.OK);
                 response.Headers.Add("Content-Type", "application/json");
                 
-                // Add CORS headers for browser access
+                // Add CORS headers for browser access (with detailed diagnostics)
                 if (req.Headers.TryGetValues("Origin", out var originValues))
                 {
                     var origin = originValues.FirstOrDefault();
-                    if (!string.IsNullOrEmpty(origin))
+                    if (string.IsNullOrEmpty(origin))
                     {
-                        var allowedOrigins = new[] {
+                        _logger.LogDebug("CORS: Origin header present but empty, linkId={LinkId}, requestId={RequestId}", id, requestId);
+                    }
+                    else
+                    {
+                        var allowedOriginsList = new List<string>
+                        {
                             "http://localhost:3000",
                             "https://localhost:3000",
                             "http://127.0.0.1:3000",
                             "https://127.0.0.1:3000"
                         };
-                        
-                        var websiteHost = Environment.GetEnvironmentVariable("WEBSITE_HOSTNAME");
-                        if (!string.IsNullOrEmpty(websiteHost))
+
+                        // NOTE: Previously this used Environment.GetEnvironmentVariable("RouteLinks:BaseUrl").
+                        // Environment variables rarely use colon separators; prefer configuration.
+                        var configuredBase = _configuration["RouteLinks:BaseUrl"]; // e.g. doem-app-<suffix>.azurewebsites.net or full https URL
+                        if (!string.IsNullOrWhiteSpace(configuredBase))
                         {
-                            allowedOrigins = allowedOrigins.Concat(new[] {
-                                $"https://{websiteHost}",
-                                $"http://{websiteHost}"
-                            }).ToArray();
+                            // Normalize to full URLs and add both http/https variants for flexibility
+                            var full = configuredBase.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? configuredBase : $"https://{configuredBase}";
+                            if (Uri.TryCreate(full, UriKind.Absolute, out var baseUri))
+                            {
+                                allowedOriginsList.Add($"https://{baseUri.Host}");
+                                allowedOriginsList.Add($"http://{baseUri.Host}");
+                            }
+                            else
+                            {
+                                _logger.LogWarning("CORS: Configured RouteLinks:BaseUrl value invalid: {ConfiguredBase}, linkId={LinkId}, requestId={RequestId}", configuredBase, id, requestId);
+                            }
                         }
-                        
-                        if (allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+
+                        var allowedOrigins = allowedOriginsList.Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+                        var isAllowed = allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
+
+                        _logger.LogDebug("CORS: Evaluating origin={Origin}; allowedOrigins={Allowed}; allowedMatch={Match}; linkId={LinkId}, requestId={RequestId}",
+                            origin, string.Join(',', allowedOrigins), isAllowed, id, requestId);
+
+                        if (isAllowed)
                         {
                             response.Headers.Add("Access-Control-Allow-Origin", origin);
                             response.Headers.Add("Access-Control-Allow-Credentials", "false");
+                            _logger.LogDebug("CORS: Applied Access-Control-Allow-Origin for {Origin}, linkId={LinkId}, requestId={RequestId}", origin, id, requestId);
+                        }
+                        else
+                        {
+                            _logger.LogInformation("CORS: Origin not in allow list, no header set. origin={Origin}; linkId={LinkId}; requestId={RequestId}", origin, id, requestId);
                         }
                     }
+                }
+                else
+                {
+                    _logger.LogDebug("CORS: No Origin header present on request, linkId={LinkId}, requestId={RequestId}", id, requestId);
                 }
                 
                 await response.WriteStringAsync(routeSpecJson);

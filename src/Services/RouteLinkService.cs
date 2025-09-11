@@ -97,25 +97,19 @@ namespace EmergencyManagementMCP.Services
                 // Build a full absolute URL when possible.
                 // Priority order:
                 // 1. Explicit configuration RouteLinks:BaseUrl (can be https://myapp.example)
-                // 2. WEBSITE_HOSTNAME environment variable (in Azure) -> construct https://<host>
                 // 3. Relative path fallback ("/view?id=<id>")
                 var configuredBase = _config["RouteLinks:BaseUrl"];
-                var hostNameEnv = Environment.GetEnvironmentVariable("WEBSITE_HOSTNAME");
                 string url;
                 if (!string.IsNullOrWhiteSpace(configuredBase))
                 {
                     var norm = configuredBase.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? configuredBase : $"https://{configuredBase}";
                     url = $"{norm.TrimEnd('/')}/view?id={id}";
-                }
-                else if (!string.IsNullOrWhiteSpace(hostNameEnv))
-                {
-                    url = $"https://{hostNameEnv.TrimEnd('/')}/view?id={id}";
-                }
+                }                
                 else
                 {
                     url = $"/view?id={id}"; // relative fallback for local dev
                 }
-                _logger.LogDebug("[RouteLink] Resolved URL {Url} (configuredBase={ConfiguredBase}, hostNameEnv={HostEnv})", url, configuredBase, hostNameEnv);
+                _logger.LogDebug("[RouteLink] Resolved URL {Url} (configuredBase={ConfiguredBase})", url, configuredBase);
 
                 var elapsedMs = (DateTime.UtcNow - startTs).TotalMilliseconds;
                 _logger.LogInformation("[RouteLink] Completed CreateAsync id={Id} elapsedMs={ElapsedMs}", id, elapsedMs);

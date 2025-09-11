@@ -84,7 +84,7 @@ namespace EmergencyManagementMcp.IntegrationTests
             _output.WriteLine("Referrer Validation:");
             _output.WriteLine("  - Checks HTTP Referer header if present");
             _output.WriteLine("  - Allows localhost for development");
-            _output.WriteLine("  - Allows WEBSITE_HOSTNAME for production");
+            _output.WriteLine("  - Allows RouteLinks:BaseUrl for production");
             _output.WriteLine("  - Returns HTTP 403 for invalid referrers");
             _output.WriteLine("");
             

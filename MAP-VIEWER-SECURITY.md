@@ -39,7 +39,7 @@ https://app.net/view?id=abc123 → GET /api/public/routeLinks/abc123 → RouteSp
 var allowedHosts = new[] { 
     "localhost", 
     "127.0.0.1",
-    Environment.GetEnvironmentVariable("WEBSITE_HOSTNAME")?.ToLowerInvariant()
+    Environment.GetEnvironmentVariable("RouteLinks:BaseUrl")?.ToLowerInvariant()
 };
 ```
 
