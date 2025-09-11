@@ -113,6 +113,21 @@ namespace EmergencyManagementMCP.Models
         public DateTime? ExpiresAt { get; set; }
     }
 
+    public class RouteLinkData
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; } = string.Empty;
+        
+        [JsonPropertyName("sasUrl")]
+        public string SasUrl { get; set; } = string.Empty;
+        
+        [JsonPropertyName("createdAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        [JsonPropertyName("expiresAt")]
+        public DateTime? ExpiresAt { get; set; }
+    }
+
     // Existing routing models continue below...
     public class DrivingInstruction
     {

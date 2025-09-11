@@ -76,22 +76,33 @@ export default function MapPage() {
     debugLog('API base resolution', { runtimeApiBase, buildTime: import.meta.env.VITE_API_BASE_URL, final: apiBaseUrl });
     
     if (id) {
-      // Short-link flow: fetch from API
-      const routeUrl = `${apiBaseUrl}/routeLinks/${encodeURIComponent(id)}`;
-      debugLog('Fetching route spec by id', { id, routeUrl });
-      const response = await fetch(routeUrl, { 
-        credentials: 'include' 
+      // Short-link flow: fetch route spec directly from public endpoint (no authentication required)
+      const publicRouteUrl = `${apiBaseUrl}/public/routeLinks/${encodeURIComponent(id)}`;
+      debugLog('Fetching route spec from public endpoint', { id, publicRouteUrl });
+      
+      const response = await fetch(publicRouteUrl, {
+        credentials: 'omit' // No credentials needed for public endpoint
       }).catch(err => {
-        errLog('Network error fetching route by id', err);
+        errLog('Network error fetching route spec from public endpoint', err);
         throw err;
       });
+      
       if (!response.ok) {
         const text = await response.text();
-        throw new Error(`Failed to fetch route: ${response.status} ${response.statusText} body=${text}`);
+        if (response.status === 410) {
+          throw new Error('This route link has expired');
+        } else if (response.status === 404) {
+          throw new Error('Route link not found');
+        } else if (response.status === 403) {
+          throw new Error('Access to this route link is not allowed from this location');
+        } else {
+          throw new Error(`Failed to fetch route: ${response.status} ${response.statusText} body=${text}`);
+        }
       }
-      const json = await response.json();
-      debugLog('Fetched route spec (short-link)', json);
-      return json;
+      
+      const routeSpec = await response.json();
+      debugLog('Fetched route spec from public endpoint', routeSpec);
+      return routeSpec;
     }
     
     // Query fallback: build from URL parameters
