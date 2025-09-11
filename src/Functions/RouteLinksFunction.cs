@@ -486,13 +486,33 @@ namespace EmergencyManagementMCP.Functions
                     }
                 }
 
+                // Download and parse the route specification to create Azure Maps post data
+                var downloadResult = await blobClient.DownloadContentAsync();
+                var routeSpecJson = downloadResult.Value.Content.ToString();
+                var routeSpec = JsonSerializer.Deserialize<RouteSpec>(routeSpecJson);
+
+                // Create Azure Maps compatible post data (without ttlMinutes)
+                AzureMapsPostData? azureMapsPostData = null;
+                if (routeSpec != null)
+                {
+                    azureMapsPostData = new AzureMapsPostData
+                    {
+                        Type = routeSpec.Type,
+                        Features = routeSpec.Features,
+                        AvoidAreas = routeSpec.AvoidAreas,
+                        RouteOutputOptions = routeSpec.RouteOutputOptions,
+                        TravelMode = routeSpec.TravelMode
+                    };
+                }
+
                 // Return information about the public endpoint for this route link
                 var routeLinkData = new RouteLinkData
                 {
                     Id = id,
                     SasUrl = $"/api/public/routeLinks/{id}", // Point to the public endpoint
                     CreatedAt = properties.Value.CreatedOn.DateTime,
-                    ExpiresAt = expiresAt
+                    ExpiresAt = expiresAt,
+                    AzureMapsPostData = azureMapsPostData
                 };
 
                 stopwatch.Stop();

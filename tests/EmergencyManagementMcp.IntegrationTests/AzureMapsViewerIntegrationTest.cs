@@ -137,6 +137,178 @@ namespace EmergencyManagementMcp.IntegrationTests
         }
 
         [Fact]
+        public void AzureMapsPostData_Model_Should_Exclude_TtlMinutes()
+        {
+            _output.WriteLine("Testing AzureMapsPostData model format for Azure Maps API 2025-01-01");
+            _output.WriteLine("====================================================================");
+
+            // Create a test AzureMapsPostData as expected by Azure Maps API
+            var azureMapsPostData = new AzureMapsPostData
+            {
+                Type = "FeatureCollection",
+                Features = new[]
+                {
+                    new RouteFeature
+                    {
+                        Type = "Feature",
+                        Geometry = new PointGeometry
+                        {
+                            Type = "Point",
+                            Coordinates = new[] { -121.4949523, 38.5769347 }
+                        },
+                        Properties = new RouteFeatureProperties
+                        {
+                            PointIndex = 0,
+                            PointType = "waypoint"
+                        }
+                    },
+                    new RouteFeature
+                    {
+                        Type = "Feature",
+                        Geometry = new PointGeometry
+                        {
+                            Type = "Point",
+                            Coordinates = new[] { -122.681425, 45.516018 }
+                        },
+                        Properties = new RouteFeatureProperties
+                        {
+                            PointIndex = 1,
+                            PointType = "waypoint"
+                        }
+                    }
+                },
+                AvoidAreas = new MultiPolygon
+                {
+                    Type = "MultiPolygon",
+                    Coordinates = new[]
+                    {
+                        new[]
+                        {
+                            new[]
+                            {
+                                new[] { -121.80627482601801, 43.582590304982084 },
+                                new[] { -121.76969060098199, 43.582590304982084 },
+                                new[] { -121.76969060098199, 43.61895877201812 },
+                                new[] { -121.80627482601801, 43.61895877201812 },
+                                new[] { -121.80627482601801, 43.582590304982084 }
+                            }
+                        },
+                        new[]
+                        {
+                            new[]
+                            {
+                                new[] { -121.98866158901801, 42.116317791981984 },
+                                new[] { -121.95234267998198, 42.116317791981984 },
+                                new[] { -121.95234267998198, 42.15268535701802 },
+                                new[] { -121.98866158901801, 42.15268535701802 },
+                                new[] { -121.98866158901801, 42.116317791981984 }
+                            }
+                        }
+                    }
+                },
+                RouteOutputOptions = new[] { "routePath", "itinerary" },
+                TravelMode = "driving"
+            };
+
+            // Serialize to JSON and verify structure
+            var json = JsonSerializer.Serialize(azureMapsPostData, new JsonSerializerOptions { WriteIndented = true });
+            
+            _output.WriteLine("Generated AzureMapsPostData JSON:");
+            _output.WriteLine(json);
+
+            // Verify required fields are present and ttlMinutes is NOT present
+            Assert.Equal("FeatureCollection", azureMapsPostData.Type);
+            Assert.Equal(2, azureMapsPostData.Features.Length);
+            Assert.Equal("driving", azureMapsPostData.TravelMode);
+            Assert.Equal(2, azureMapsPostData.RouteOutputOptions.Length);
+            Assert.Contains("routePath", azureMapsPostData.RouteOutputOptions);
+            Assert.Contains("itinerary", azureMapsPostData.RouteOutputOptions);
+            Assert.NotNull(azureMapsPostData.AvoidAreas);
+            
+            // Verify JSON doesn't contain ttlMinutes
+            Assert.DoesNotContain("ttlMinutes", json);
+
+            _output.WriteLine("");
+            _output.WriteLine("✓ AzureMapsPostData model matches Azure Maps API 2025-01-01 requirements");
+            _output.WriteLine("✓ ttlMinutes field is correctly excluded from Azure Maps API payload");
+        }
+
+        [Fact]
+        public void RouteLinkData_Should_Include_AzureMapsPostData_Field()
+        {
+            _output.WriteLine("Testing RouteLinkData includes azureMapsPostData for web app integration");
+            _output.WriteLine("=========================================================================");
+
+            // Create a sample RouteLinkData as would be returned by GetRouteLink
+            var routeLinkData = new RouteLinkData
+            {
+                Id = "test123",
+                SasUrl = "/api/public/routeLinks/test123",
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                AzureMapsPostData = new AzureMapsPostData
+                {
+                    Type = "FeatureCollection",
+                    Features = new[]
+                    {
+                        new RouteFeature
+                        {
+                            Type = "Feature",
+                            Geometry = new PointGeometry
+                            {
+                                Type = "Point",
+                                Coordinates = new[] { -121.4949523, 38.5769347 }
+                            },
+                            Properties = new RouteFeatureProperties
+                            {
+                                PointIndex = 0,
+                                PointType = "waypoint"
+                            }
+                        },
+                        new RouteFeature
+                        {
+                            Type = "Feature",
+                            Geometry = new PointGeometry
+                            {
+                                Type = "Point",
+                                Coordinates = new[] { -122.681425, 45.516018 }
+                            },
+                            Properties = new RouteFeatureProperties
+                            {
+                                PointIndex = 1,
+                                PointType = "waypoint"
+                            }
+                        }
+                    },
+                    TravelMode = "driving",
+                    RouteOutputOptions = new[] { "routePath", "itinerary" }
+                }
+            };
+
+            // Serialize to JSON and verify the web app can get the azureMapsPostData
+            var json = JsonSerializer.Serialize(routeLinkData, new JsonSerializerOptions { WriteIndented = true });
+            
+            _output.WriteLine("Generated RouteLinkData JSON (as returned by GetRouteLink):");
+            _output.WriteLine(json);
+
+            // Verify the structure includes all required fields
+            Assert.NotNull(routeLinkData.AzureMapsPostData);
+            Assert.Equal("FeatureCollection", routeLinkData.AzureMapsPostData.Type);
+            Assert.Equal(2, routeLinkData.AzureMapsPostData.Features.Length);
+            Assert.Equal("driving", routeLinkData.AzureMapsPostData.TravelMode);
+            Assert.Contains("routePath", routeLinkData.AzureMapsPostData.RouteOutputOptions);
+            Assert.Contains("itinerary", routeLinkData.AzureMapsPostData.RouteOutputOptions);
+            
+            // Verify JSON contains azureMapsPostData field
+            Assert.Contains("azureMapsPostData", json);
+            Assert.Contains("\"type\": \"FeatureCollection\"", json);
+
+            _output.WriteLine("");
+            _output.WriteLine("✓ RouteLinkData includes azureMapsPostData field for web app integration");
+            _output.WriteLine("✓ Web app can extract Azure Maps compatible payload from response");
+        }
+
+        [Fact]
         public void React_SPA_Configuration_Should_Be_Documented()
         {
             _output.WriteLine("React SPA Configuration Documentation");

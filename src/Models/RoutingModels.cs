@@ -126,6 +126,27 @@ namespace EmergencyManagementMCP.Models
         
         [JsonPropertyName("expiresAt")]
         public DateTime? ExpiresAt { get; set; }
+        
+        [JsonPropertyName("azureMapsPostData")]
+        public AzureMapsPostData? AzureMapsPostData { get; set; }
+    }
+
+    public class AzureMapsPostData
+    {
+        [JsonPropertyName("type")]
+        public string Type { get; set; } = "FeatureCollection";
+        
+        [JsonPropertyName("features")]
+        public RouteFeature[] Features { get; set; } = Array.Empty<RouteFeature>();
+        
+        [JsonPropertyName("avoidAreas")]
+        public MultiPolygon? AvoidAreas { get; set; }
+        
+        [JsonPropertyName("routeOutputOptions")]
+        public string[] RouteOutputOptions { get; set; } = new[] { "routePath", "itinerary" };
+        
+        [JsonPropertyName("travelMode")]
+        public string TravelMode { get; set; } = "driving";
     }
 
     // Existing routing models continue below...
