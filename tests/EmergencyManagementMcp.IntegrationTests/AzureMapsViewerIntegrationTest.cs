@@ -234,6 +234,81 @@ namespace EmergencyManagementMcp.IntegrationTests
         }
 
         [Fact]
+        public void RouteLinkData_Should_Include_AzureMapsPostData_Field()
+        {
+            _output.WriteLine("Testing RouteLinkData includes azureMapsPostData for web app integration");
+            _output.WriteLine("=========================================================================");
+
+            // Create a sample RouteLinkData as would be returned by GetRouteLink
+            var routeLinkData = new RouteLinkData
+            {
+                Id = "test123",
+                SasUrl = "/api/public/routeLinks/test123",
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(1),
+                AzureMapsPostData = new AzureMapsPostData
+                {
+                    Type = "FeatureCollection",
+                    Features = new[]
+                    {
+                        new RouteFeature
+                        {
+                            Type = "Feature",
+                            Geometry = new PointGeometry
+                            {
+                                Type = "Point",
+                                Coordinates = new[] { -121.4949523, 38.5769347 }
+                            },
+                            Properties = new RouteFeatureProperties
+                            {
+                                PointIndex = 0,
+                                PointType = "waypoint"
+                            }
+                        },
+                        new RouteFeature
+                        {
+                            Type = "Feature",
+                            Geometry = new PointGeometry
+                            {
+                                Type = "Point",
+                                Coordinates = new[] { -122.681425, 45.516018 }
+                            },
+                            Properties = new RouteFeatureProperties
+                            {
+                                PointIndex = 1,
+                                PointType = "waypoint"
+                            }
+                        }
+                    },
+                    TravelMode = "driving",
+                    RouteOutputOptions = new[] { "routePath", "itinerary" }
+                }
+            };
+
+            // Serialize to JSON and verify the web app can get the azureMapsPostData
+            var json = JsonSerializer.Serialize(routeLinkData, new JsonSerializerOptions { WriteIndented = true });
+            
+            _output.WriteLine("Generated RouteLinkData JSON (as returned by GetRouteLink):");
+            _output.WriteLine(json);
+
+            // Verify the structure includes all required fields
+            Assert.NotNull(routeLinkData.AzureMapsPostData);
+            Assert.Equal("FeatureCollection", routeLinkData.AzureMapsPostData.Type);
+            Assert.Equal(2, routeLinkData.AzureMapsPostData.Features.Length);
+            Assert.Equal("driving", routeLinkData.AzureMapsPostData.TravelMode);
+            Assert.Contains("routePath", routeLinkData.AzureMapsPostData.RouteOutputOptions);
+            Assert.Contains("itinerary", routeLinkData.AzureMapsPostData.RouteOutputOptions);
+            
+            // Verify JSON contains azureMapsPostData field
+            Assert.Contains("azureMapsPostData", json);
+            Assert.Contains("\"type\": \"FeatureCollection\"", json);
+
+            _output.WriteLine("");
+            _output.WriteLine("✓ RouteLinkData includes azureMapsPostData field for web app integration");
+            _output.WriteLine("✓ Web app can extract Azure Maps compatible payload from response");
+        }
+
+        [Fact]
         public void React_SPA_Configuration_Should_Be_Documented()
         {
             _output.WriteLine("React SPA Configuration Documentation");
