@@ -16,7 +16,7 @@ interface RouteSpec {
     };
   }>;
   travelMode: 'driving';
-  routeOutputOptions: ['routePath'];
+  routeOutputOptions: string[];
   avoidAreas?: {
     type: 'MultiPolygon';
     coordinates: number[][][][];
@@ -102,6 +102,12 @@ export default function MapPage() {
       
       const routeSpec = await response.json();
       debugLog('Fetched route spec from public endpoint', routeSpec);
+      
+      // Remove ttlMinutes as it's not needed for Azure Maps API call
+      if (routeSpec.ttlMinutes !== undefined) {
+        delete routeSpec.ttlMinutes;
+      }
+      
       return routeSpec;
     }
     
@@ -142,7 +148,7 @@ export default function MapPage() {
         }
       ],
       travelMode: 'driving',
-      routeOutputOptions: ['routePath'],
+      routeOutputOptions: ['routePath', 'itinerary'],
       ...(avoidAreas && { avoidAreas })
     };
     debugLog('Constructed route spec from query params', spec);
@@ -241,9 +247,9 @@ export default function MapPage() {
         // Get token for REST API calls
         const token = await getToken('route-rest');
 
-        // Call Azure Maps Route API
+        // Call Azure Maps Route API with updated version
         const routeCallStarted = performance.now();
-        const response = await fetch('https://atlas.microsoft.com/route/directions?api-version=1.0', {
+        const response = await fetch('https://atlas.microsoft.com/route/directions?api-version=2025-01-01', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/geo+json',
