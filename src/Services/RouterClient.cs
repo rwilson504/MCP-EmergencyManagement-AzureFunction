@@ -2,6 +2,7 @@ using EmergencyManagementMCP.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Web;
 using Azure.Core;
 using Azure.Identity;
@@ -284,6 +285,106 @@ namespace EmergencyManagementMCP.Services
                 _logger.LogError(ex, "Unexpected error parsing Azure Maps response, requestId={RequestId}", requestId);
                 throw;
             }
+        }
+
+        public async Task<RouteWithRequestData> GetRouteWithRequestDataAsync(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas, DateTime? departAt = null)
+        {
+            // Get the route result using the existing method
+            var routeResult = await GetRouteAsync(origin, destination, avoidAreas, departAt);
+            
+            // Build the Azure Maps POST request JSON body that MapPage.tsx would send
+            var postRequestJson = BuildAzureMapsPostRequestJson(origin, destination, avoidAreas);
+            
+            return new RouteWithRequestData
+            {
+                Route = routeResult,
+                AzureMapsPostData = JsonSerializer.Deserialize<AzureMapsPostData>(postRequestJson) ?? new AzureMapsPostData(),
+                AzureMapsPostJson = postRequestJson
+            };
+        }
+
+        /// <summary>
+        /// Builds the exact JSON that MapPage.tsx would send as the POST body to Azure Maps API.
+        /// This matches the JSON.stringify(spec) that goes into body: of the fetch request.
+        /// </summary>
+        private string BuildAzureMapsPostRequestJson(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas)
+        {
+            // Build the exact same JSON structure that MapPage.tsx sends to Azure Maps
+            var features = new List<object>
+            {
+                new
+                {
+                    type = "Feature",
+                    geometry = new
+                    {
+                        type = "Point",
+                        coordinates = new[] { origin.Lon, origin.Lat } // GeoJSON format: [lon, lat]
+                    },
+                    properties = new
+                    {
+                        pointIndex = 0,
+                        pointType = "waypoint"
+                    }
+                },
+                new
+                {
+                    type = "Feature",
+                    geometry = new
+                    {
+                        type = "Point",
+                        coordinates = new[] { destination.Lon, destination.Lat } // GeoJSON format: [lon, lat]
+                    },
+                    properties = new
+                    {
+                        pointIndex = 1,
+                        pointType = "waypoint"
+                    }
+                }
+            };
+
+            // Convert avoid rectangles to MultiPolygon geometry exactly like MapPage.tsx expects
+            object? avoidAreasGeometry = null;
+            if (avoidAreas.Any())
+            {
+                var areasToUse = avoidAreas.Take(10).ToList(); // Azure Maps limit
+                var coordinates = areasToUse.Select(r => new[]
+                {
+                    new[]
+                    {
+                        new[] { r.MinLon, r.MinLat },
+                        new[] { r.MaxLon, r.MinLat },
+                        new[] { r.MaxLon, r.MaxLat },
+                        new[] { r.MinLon, r.MaxLat },
+                        new[] { r.MinLon, r.MinLat } // Close the polygon
+                    }
+                }).ToArray();
+
+                avoidAreasGeometry = new
+                {
+                    type = "MultiPolygon",
+                    coordinates = coordinates
+                };
+            }
+
+            // Build the complete POST request JSON that matches MapPage.tsx JSON.stringify(spec)
+            var postBody = new
+            {
+                type = "FeatureCollection",
+                features = features,
+                travelMode = "driving", // Matches our "travelMode=car" query param
+                routeOutputOptions = new[] { "routePath", "itinerary" }, // Matches our current request
+                avoidAreas = avoidAreasGeometry
+            };
+
+            // Serialize with naming policy to match MapPage.tsx JSON format (camelCase)
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+            return JsonSerializer.Serialize(postBody, options);
         }
     }
 }

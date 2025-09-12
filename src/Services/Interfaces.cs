@@ -23,6 +23,7 @@ namespace EmergencyManagementMCP.Services
     public interface IRouterClient
     {
         Task<RouteResult> GetRouteAsync(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas, DateTime? departAt = null);
+        Task<RouteWithRequestData> GetRouteWithRequestDataAsync(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas, DateTime? departAt = null);
     }
 
     public interface IRouteLinkService
@@ -37,6 +38,18 @@ namespace EmergencyManagementMCP.Services
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>RouteLink with id + URL</returns>
         Task<RouteLink> CreateAsync(Coordinate origin, Coordinate destination, IEnumerable<string> appliedAvoids, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
+        
+        /// <summary>
+        /// Creates (or reuses deterministically) a shareable route link artifact with Azure Maps POST request JSON.
+        /// </summary>
+        /// <param name="origin">Origin coordinate</param>
+        /// <param name="destination">Destination coordinate</param>
+        /// <param name="appliedAvoids">Applied avoid rectangles (string form)</param>
+        /// <param name="azureMapsPostJson">Raw Azure Maps POST request JSON that MapPage.tsx will send directly to Azure Maps API</param>
+        /// <param name="ttl">Time to live (null for default)</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>RouteLink with id + URL</returns>
+        Task<RouteLink> CreateAsync(Coordinate origin, Coordinate destination, IEnumerable<string> appliedAvoids, string azureMapsPostJson, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
     }
 
     public interface IGeocodingClient

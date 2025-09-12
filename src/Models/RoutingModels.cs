@@ -180,6 +180,22 @@ namespace EmergencyManagementMCP.Models
         public DrivingInstruction[] DrivingDirections { get; set; } = Array.Empty<DrivingInstruction>();
     }
 
+    /// <summary>
+    /// Wrapper class that contains both the route calculation result and the Azure Maps POST request JSON
+    /// that was used to generate it. This enables the MapPage.tsx to reuse the exact same API request.
+    /// </summary>
+    public class RouteWithRequestData
+    {
+        [JsonPropertyName("route")]
+        public RouteResult Route { get; set; } = new();
+        
+        [JsonPropertyName("azureMapsPostData")]
+        public AzureMapsPostData AzureMapsPostData { get; set; } = new();
+        
+        [JsonPropertyName("azureMapsPostJson")]
+        public string AzureMapsPostJson { get; set; } = string.Empty;
+    }
+
     public class FireAwareRouteResponse
     {
         [JsonPropertyName("route")]
