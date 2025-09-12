@@ -75,15 +75,49 @@ namespace EmergencyManagementMCP.Services
                 var existed = await blob.ExistsAsync(cancellationToken);
                 if (!existed)
                 {
-                    var doc = new
+                    // Create proper RouteSpec format expected by RouteLinksFunction and Map Page
+                    var routeSpec = new RouteSpec
                     {
-                        origin,
-                        destination,
-                        appliedAvoids = avoids,
-                        createdAt = DateTime.UtcNow,
-                        expiresAt
+                        Type = "FeatureCollection",
+                        Features = new[]
+                        {
+                            new RouteFeature
+                            {
+                                Type = "Feature",
+                                Geometry = new PointGeometry
+                                {
+                                    Type = "Point",
+                                    Coordinates = new[] { origin.Lon, origin.Lat } // GeoJSON format: [lon, lat]
+                                },
+                                Properties = new RouteFeatureProperties
+                                {
+                                    PointIndex = 0,
+                                    PointType = "waypoint"
+                                }
+                            },
+                            new RouteFeature
+                            {
+                                Type = "Feature", 
+                                Geometry = new PointGeometry
+                                {
+                                    Type = "Point",
+                                    Coordinates = new[] { destination.Lon, destination.Lat } // GeoJSON format: [lon, lat]
+                                },
+                                Properties = new RouteFeatureProperties
+                                {
+                                    PointIndex = 1,
+                                    PointType = "waypoint"
+                                }
+                            }
+                        },
+                        TravelMode = "driving",
+                        RouteOutputOptions = new[] { "routePath", "itinerary" },
+                        TtlMinutes = ttl.HasValue ? (int)ttl.Value.TotalMinutes : null
+                        // Note: AvoidAreas could be populated here if avoids contained area data,
+                        // but currently avoids appears to be string identifiers rather than geometry
                     };
-                    var json = JsonSerializer.Serialize(doc);
+                    
+                    var json = JsonSerializer.Serialize(routeSpec);
                     using var ms = new MemoryStream(Encoding.UTF8.GetBytes(json));
                     await blob.UploadAsync(ms, overwrite: true, cancellationToken);
                     await blob.SetMetadataAsync(new Dictionary<string, string> { ["ExpiresAt"] = expiresAt.ToString("O") }, cancellationToken: cancellationToken);
