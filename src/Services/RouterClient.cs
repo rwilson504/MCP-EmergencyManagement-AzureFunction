@@ -285,5 +285,91 @@ namespace EmergencyManagementMCP.Services
                 throw;
             }
         }
+
+        public async Task<RouteWithRequestData> GetRouteWithRequestDataAsync(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas, DateTime? departAt = null)
+        {
+            // Get the route result using the existing method
+            var routeResult = await GetRouteAsync(origin, destination, avoidAreas, departAt);
+            
+            // Build the Azure Maps POST request data equivalent
+            var azureMapsPostData = BuildAzureMapsPostData(origin, destination, avoidAreas, departAt);
+            
+            return new RouteWithRequestData
+            {
+                Route = routeResult,
+                AzureMapsPostData = azureMapsPostData
+            };
+        }
+
+        private AzureMapsPostData BuildAzureMapsPostData(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas, DateTime? departAt)
+        {
+            // Build the Azure Maps POST JSON equivalent of our GET request
+            var features = new List<RouteFeature>
+            {
+                new RouteFeature
+                {
+                    Type = "Feature",
+                    Geometry = new PointGeometry
+                    {
+                        Type = "Point",
+                        Coordinates = new[] { origin.Lon, origin.Lat } // GeoJSON format: [lon, lat]
+                    },
+                    Properties = new RouteFeatureProperties
+                    {
+                        PointIndex = 0,
+                        PointType = "waypoint"
+                    }
+                },
+                new RouteFeature
+                {
+                    Type = "Feature",
+                    Geometry = new PointGeometry
+                    {
+                        Type = "Point",
+                        Coordinates = new[] { destination.Lon, destination.Lat } // GeoJSON format: [lon, lat]
+                    },
+                    Properties = new RouteFeatureProperties
+                    {
+                        PointIndex = 1,
+                        PointType = "waypoint"
+                    }
+                }
+            };
+
+            // Convert avoid rectangles to MultiPolygon for Azure Maps POST format
+            MultiPolygon? avoidAreasMultiPolygon = null;
+            if (avoidAreas.Any())
+            {
+                var areasToUse = avoidAreas.Take(10).ToList(); // Azure Maps limit
+                var polygons = areasToUse.Select(r => new[]
+                {
+                    new[]
+                    {
+                        new[] { r.MinLon, r.MinLat },
+                        new[] { r.MaxLon, r.MinLat },
+                        new[] { r.MaxLon, r.MaxLat },
+                        new[] { r.MinLon, r.MaxLat },
+                        new[] { r.MinLon, r.MinLat } // Close the polygon
+                    }
+                }).ToArray();
+
+                avoidAreasMultiPolygon = new MultiPolygon
+                {
+                    Type = "MultiPolygon",
+                    Coordinates = polygons
+                };
+            }
+
+            return new AzureMapsPostData
+            {
+                Type = "FeatureCollection",
+                Features = features.ToArray(),
+                TravelMode = "driving", // Matches our "travelMode=car" query param
+                RouteOutputOptions = new[] { "routePath", "itinerary" }, // Matches our current request
+                AvoidAreas = avoidAreasMultiPolygon
+                // Note: departAt is typically handled in query parameters or headers for Azure Maps,
+                // not in the POST body, so we don't include it here
+            };
+        }
     }
 }

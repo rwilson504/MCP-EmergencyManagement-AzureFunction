@@ -151,7 +151,8 @@ namespace EmergencyManagementMCP.Tools
                 stepStopwatch.Restart();
                 
                 // 7. Call router with avoid areas
-                var route = await _routerClient.GetRouteAsync(origin, destination, avoidRectangles, departAt);
+                var routeWithData = await _routerClient.GetRouteWithRequestDataAsync(origin, destination, avoidRectangles, departAt);
+                var route = routeWithData.Route;
 
                 stepStopwatch.Stop();
                 _logger.LogDebug("Step 7 completed in {ElapsedMs}ms: route calculated, traceId={TraceId}", 
@@ -167,7 +168,7 @@ namespace EmergencyManagementMCP.Tools
                         var ttl = (shareLinkTtlMinutes.HasValue && shareLinkTtlMinutes.Value > 0)
                             ? TimeSpan.FromMinutes(shareLinkTtlMinutes.Value)
                             : (TimeSpan?)null;
-                        shareLink = await _routeLinkService.CreateAsync(origin, destination, appliedAvoidsArr, ttl);
+                        shareLink = await _routeLinkService.CreateAsync(origin, destination, appliedAvoidsArr, routeWithData.AzureMapsPostData, ttl);
                     }
                     catch (Exception linkEx)
                     {
