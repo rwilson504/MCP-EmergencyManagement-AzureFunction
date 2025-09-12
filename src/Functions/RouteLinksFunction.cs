@@ -336,9 +336,24 @@ namespace EmergencyManagementMCP.Functions
                     }
                 }
 
-                // Download and return the route specification directly
+                // Download and parse the route specification to create Azure Maps post data
                 var downloadResult = await blobClient.DownloadContentAsync();
                 var routeSpecJson = downloadResult.Value.Content.ToString();
+                var routeSpec = JsonSerializer.Deserialize<RouteSpec>(routeSpecJson);
+
+                // Create Azure Maps compatible post data (without ttlMinutes)
+                AzureMapsPostData? azureMapsPostData = null;
+                if (routeSpec != null)
+                {
+                    azureMapsPostData = new AzureMapsPostData
+                    {
+                        Type = routeSpec.Type,
+                        Features = routeSpec.Features,
+                        AvoidAreas = routeSpec.AvoidAreas,
+                        RouteOutputOptions = routeSpec.RouteOutputOptions,
+                        TravelMode = routeSpec.TravelMode
+                    };
+                }
 
                 stopwatch.Stop();
                 _logger.LogInformation("Public route link retrieved successfully: {LinkId}, requestId={RequestId}, elapsed={ElapsedMs}ms",
@@ -406,7 +421,7 @@ namespace EmergencyManagementMCP.Functions
                     _logger.LogDebug("CORS: No Origin header present on request, linkId={LinkId}, requestId={RequestId}", id, requestId);
                 }
                 
-                await response.WriteStringAsync(routeSpecJson);
+                await response.WriteAsJsonAsync(azureMapsPostData);
                 return response;
             }
             catch (Exception ex)

@@ -104,11 +104,11 @@ namespace EmergencyManagementMcp.IntegrationTests
                 type = "FeatureCollection",
                 features = originalRouteSpec.Features,
                 travelMode = originalRouteSpec.TravelMode,
-                routeOutputOptions = originalRouteSpec.RouteOutputOptions,
-                ttlMinutes = originalRouteSpec.TtlMinutes
+                routeOutputOptions = originalRouteSpec.RouteOutputOptions
+                // Note: ttlMinutes is now excluded for Azure Maps API compatibility
             };
             
-            _output.WriteLine("Returns: RouteSpec JSON directly");
+            _output.WriteLine("Returns: Azure Maps API compatible JSON (ttlMinutes excluded)");
             _output.WriteLine("");
             
             _output.WriteLine("Step 4: Map Renders Route");
