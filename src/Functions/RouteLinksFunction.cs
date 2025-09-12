@@ -154,7 +154,6 @@ namespace EmergencyManagementMCP.Functions
                     linkId, requestId, stopwatch.ElapsedMilliseconds);
 
                 var response = req.CreateResponse(HttpStatusCode.Created);
-                response.Headers.Add("Content-Type", "application/json");
                 await response.WriteAsJsonAsync(routeLink);
 
                 return response;
@@ -359,9 +358,7 @@ namespace EmergencyManagementMCP.Functions
                 _logger.LogInformation("Public route link retrieved successfully: {LinkId}, requestId={RequestId}, elapsed={ElapsedMs}ms",
                     id, requestId, stopwatch.ElapsedMilliseconds);
 
-                var response = req.CreateResponse(HttpStatusCode.OK);
-                response.Headers.Add("Content-Type", "application/json");
-                
+                var response = req.CreateResponse(HttpStatusCode.OK);                
                 // Add CORS headers for browser access (with detailed diagnostics)
                 if (req.Headers.TryGetValues("Origin", out var originValues))
                 {
@@ -535,7 +532,6 @@ namespace EmergencyManagementMCP.Functions
                     id, requestId, stopwatch.ElapsedMilliseconds);
 
                 var response = req.CreateResponse(HttpStatusCode.OK);
-                response.Headers.Add("Content-Type", "application/json");
                 await response.WriteAsJsonAsync(routeLinkData);
 
                 return response;
