@@ -2,6 +2,7 @@ using EmergencyManagementMCP.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Web;
 using Azure.Core;
 using Azure.Identity;
@@ -291,57 +292,62 @@ namespace EmergencyManagementMCP.Services
             // Get the route result using the existing method
             var routeResult = await GetRouteAsync(origin, destination, avoidAreas, departAt);
             
-            // Build the Azure Maps POST request data equivalent
-            var azureMapsPostData = BuildAzureMapsPostData(origin, destination, avoidAreas, departAt);
+            // Build the Azure Maps POST request JSON body that MapPage.tsx would send
+            var postRequestJson = BuildAzureMapsPostRequestJson(origin, destination, avoidAreas);
             
             return new RouteWithRequestData
             {
                 Route = routeResult,
-                AzureMapsPostData = azureMapsPostData
+                AzureMapsPostData = JsonSerializer.Deserialize<AzureMapsPostData>(postRequestJson) ?? new AzureMapsPostData(),
+                AzureMapsPostJson = postRequestJson
             };
         }
 
-        private AzureMapsPostData BuildAzureMapsPostData(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas, DateTime? departAt)
+        /// <summary>
+        /// Builds the exact JSON that MapPage.tsx would send as the POST body to Azure Maps API.
+        /// This matches the JSON.stringify(spec) that goes into body: of the fetch request.
+        /// </summary>
+        private string BuildAzureMapsPostRequestJson(Coordinate origin, Coordinate destination, List<AvoidRectangle> avoidAreas)
         {
-            // Build the Azure Maps POST JSON equivalent of our GET request
-            var features = new List<RouteFeature>
+            // Build the exact same JSON structure that MapPage.tsx sends to Azure Maps
+            var features = new List<object>
             {
-                new RouteFeature
+                new
                 {
-                    Type = "Feature",
-                    Geometry = new PointGeometry
+                    type = "Feature",
+                    geometry = new
                     {
-                        Type = "Point",
-                        Coordinates = new[] { origin.Lon, origin.Lat } // GeoJSON format: [lon, lat]
+                        type = "Point",
+                        coordinates = new[] { origin.Lon, origin.Lat } // GeoJSON format: [lon, lat]
                     },
-                    Properties = new RouteFeatureProperties
+                    properties = new
                     {
-                        PointIndex = 0,
-                        PointType = "waypoint"
+                        pointIndex = 0,
+                        pointType = "waypoint"
                     }
                 },
-                new RouteFeature
+                new
                 {
-                    Type = "Feature",
-                    Geometry = new PointGeometry
+                    type = "Feature",
+                    geometry = new
                     {
-                        Type = "Point",
-                        Coordinates = new[] { destination.Lon, destination.Lat } // GeoJSON format: [lon, lat]
+                        type = "Point",
+                        coordinates = new[] { destination.Lon, destination.Lat } // GeoJSON format: [lon, lat]
                     },
-                    Properties = new RouteFeatureProperties
+                    properties = new
                     {
-                        PointIndex = 1,
-                        PointType = "waypoint"
+                        pointIndex = 1,
+                        pointType = "waypoint"
                     }
                 }
             };
 
-            // Convert avoid rectangles to MultiPolygon for Azure Maps POST format
-            MultiPolygon? avoidAreasMultiPolygon = null;
+            // Convert avoid rectangles to MultiPolygon geometry exactly like MapPage.tsx expects
+            object? avoidAreasGeometry = null;
             if (avoidAreas.Any())
             {
                 var areasToUse = avoidAreas.Take(10).ToList(); // Azure Maps limit
-                var polygons = areasToUse.Select(r => new[]
+                var coordinates = areasToUse.Select(r => new[]
                 {
                     new[]
                     {
@@ -353,23 +359,32 @@ namespace EmergencyManagementMCP.Services
                     }
                 }).ToArray();
 
-                avoidAreasMultiPolygon = new MultiPolygon
+                avoidAreasGeometry = new
                 {
-                    Type = "MultiPolygon",
-                    Coordinates = polygons
+                    type = "MultiPolygon",
+                    coordinates = coordinates
                 };
             }
 
-            return new AzureMapsPostData
+            // Build the complete POST request JSON that matches MapPage.tsx JSON.stringify(spec)
+            var postBody = new
             {
-                Type = "FeatureCollection",
-                Features = features.ToArray(),
-                TravelMode = "driving", // Matches our "travelMode=car" query param
-                RouteOutputOptions = new[] { "routePath", "itinerary" }, // Matches our current request
-                AvoidAreas = avoidAreasMultiPolygon
-                // Note: departAt is typically handled in query parameters or headers for Azure Maps,
-                // not in the POST body, so we don't include it here
+                type = "FeatureCollection",
+                features = features,
+                travelMode = "driving", // Matches our "travelMode=car" query param
+                routeOutputOptions = new[] { "routePath", "itinerary" }, // Matches our current request
+                avoidAreas = avoidAreasGeometry
             };
+
+            // Serialize with naming policy to match MapPage.tsx JSON format (camelCase)
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = false,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+            return JsonSerializer.Serialize(postBody, options);
         }
     }
 }

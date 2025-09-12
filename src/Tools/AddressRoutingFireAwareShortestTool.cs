@@ -187,7 +187,7 @@ namespace EmergencyManagementMCP.Tools
                         var ttl = (shareLinkTtlMinutes.HasValue && shareLinkTtlMinutes.Value > 0)
                             ? TimeSpan.FromMinutes(shareLinkTtlMinutes.Value)
                             : (TimeSpan?)null;
-                        shareLink = await _routeLinkService.CreateAsync(origin, destination, appliedAvoidsArr, routeWithData.AzureMapsPostData, ttl);
+                        shareLink = await _routeLinkService.CreateAsync(origin, destination, appliedAvoidsArr, routeWithData.AzureMapsPostJson, ttl);
                     }
                     catch (Exception linkEx)
                     {

@@ -181,7 +181,7 @@ namespace EmergencyManagementMCP.Models
     }
 
     /// <summary>
-    /// Wrapper class that contains both the route calculation result and the Azure Maps request data
+    /// Wrapper class that contains both the route calculation result and the Azure Maps POST request JSON
     /// that was used to generate it. This enables the MapPage.tsx to reuse the exact same API request.
     /// </summary>
     public class RouteWithRequestData
@@ -191,6 +191,9 @@ namespace EmergencyManagementMCP.Models
         
         [JsonPropertyName("azureMapsPostData")]
         public AzureMapsPostData AzureMapsPostData { get; set; } = new();
+        
+        [JsonPropertyName("azureMapsPostJson")]
+        public string AzureMapsPostJson { get; set; } = string.Empty;
     }
 
     public class FireAwareRouteResponse

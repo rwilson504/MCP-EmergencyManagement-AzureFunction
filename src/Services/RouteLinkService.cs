@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Azure.Identity;
 using Azure.Storage.Blobs;
 using EmergencyManagementMCP.Models;
@@ -165,7 +166,7 @@ namespace EmergencyManagementMCP.Services
             }
         }
 
-        public async Task<RouteLink> CreateAsync(Coordinate origin, Coordinate destination, IEnumerable<string> appliedAvoids, AzureMapsPostData azureMapsPostData, TimeSpan? ttl = null, CancellationToken cancellationToken = default)
+        public async Task<RouteLink> CreateAsync(Coordinate origin, Coordinate destination, IEnumerable<string> appliedAvoids, string azureMapsPostJson, TimeSpan? ttl = null, CancellationToken cancellationToken = default)
         {
             var startTs = DateTime.UtcNow;
             var avoids = appliedAvoids?.OrderBy(a => a).ToArray() ?? Array.Empty<string>();
@@ -178,7 +179,7 @@ namespace EmergencyManagementMCP.Services
                     storageHost = new Uri(_storageUrl).Host;
                 }
                 catch { /* ignore */ }
-                _logger.LogInformation("[RouteLink] Begin CreateAsync with Azure Maps data: origin=({OriginLat},{OriginLon}) destination=({DestLat},{DestLon}) avoids={AvoidCount} ttlMinutes={Ttl} storageHost={Host}",
+                _logger.LogInformation("[RouteLink] Begin CreateAsync with Azure Maps POST JSON: origin=({OriginLat},{OriginLon}) destination=({DestLat},{DestLon}) avoids={AvoidCount} ttlMinutes={Ttl} storageHost={Host}",
                     origin.Lat, origin.Lon, destination.Lat, destination.Lon, avoids.Length, ttlMinutes, storageHost);
 
                 // Deterministic ID: SHA256 of origin|destination|avoids|day bucket
@@ -206,22 +207,35 @@ namespace EmergencyManagementMCP.Services
                 var existed = await blob.ExistsAsync(cancellationToken);
                 if (!existed)
                 {
-                    // Create RouteSpec with Azure Maps POST data included
-                    var routeSpec = new RouteSpec
+                    // Parse the Azure Maps POST JSON and add TTL to it for storage
+                    var postData = JsonSerializer.Deserialize<JsonElement>(azureMapsPostJson);
+                    
+                    // Create a new object with the TTL added for storage
+                    var storageData = new Dictionary<string, object?>
                     {
-                        Type = azureMapsPostData.Type,
-                        Features = azureMapsPostData.Features,
-                        TravelMode = azureMapsPostData.TravelMode,
-                        RouteOutputOptions = azureMapsPostData.RouteOutputOptions,
-                        AvoidAreas = azureMapsPostData.AvoidAreas,
-                        TtlMinutes = ttl.HasValue ? (int)ttl.Value.TotalMinutes : null
+                        ["type"] = postData.GetProperty("type").GetString(),
+                        ["features"] = JsonSerializer.Deserialize<object>(postData.GetProperty("features").GetRawText()),
+                        ["travelMode"] = postData.GetProperty("travelMode").GetString(),
+                        ["routeOutputOptions"] = JsonSerializer.Deserialize<string[]>(postData.GetProperty("routeOutputOptions").GetRawText()),
+                        ["ttlMinutes"] = ttl.HasValue ? (int)ttl.Value.TotalMinutes : null
                     };
                     
-                    var json = JsonSerializer.Serialize(routeSpec);
-                    using var ms = new MemoryStream(Encoding.UTF8.GetBytes(json));
+                    // Add avoidAreas if it exists
+                    if (postData.TryGetProperty("avoidAreas", out var avoidAreasElement) && avoidAreasElement.ValueKind != JsonValueKind.Null)
+                    {
+                        storageData["avoidAreas"] = JsonSerializer.Deserialize<object>(avoidAreasElement.GetRawText());
+                    }
+                    
+                    var storageJson = JsonSerializer.Serialize(storageData, new JsonSerializerOptions 
+                    { 
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    });
+                    
+                    using var ms = new MemoryStream(Encoding.UTF8.GetBytes(storageJson));
                     await blob.UploadAsync(ms, overwrite: true, cancellationToken);
                     await blob.SetMetadataAsync(new Dictionary<string, string> { ["ExpiresAt"] = expiresAt.ToString("O") }, cancellationToken: cancellationToken);
-                    _logger.LogInformation("[RouteLink] Created new deterministic route link with Azure Maps data {Id}", id);
+                    _logger.LogInformation("[RouteLink] Created new deterministic route link with Azure Maps POST JSON {Id}", id);
                 }
                 else
                 {
@@ -246,7 +260,7 @@ namespace EmergencyManagementMCP.Services
                 _logger.LogDebug("[RouteLink] Resolved URL {Url} (configuredBase={ConfiguredBase})", url, configuredBase);
 
                 var elapsedMs = (DateTime.UtcNow - startTs).TotalMilliseconds;
-                _logger.LogInformation("[RouteLink] Completed CreateAsync with Azure Maps data: id={Id} elapsedMs={ElapsedMs}", id, elapsedMs);
+                _logger.LogInformation("[RouteLink] Completed CreateAsync with Azure Maps POST JSON: id={Id} elapsedMs={ElapsedMs}", id, elapsedMs);
 
                 return new RouteLink
                 {
@@ -259,7 +273,7 @@ namespace EmergencyManagementMCP.Services
             catch (Exception ex)
             {
                 var elapsedMs = (DateTime.UtcNow - startTs).TotalMilliseconds;
-                _logger.LogError(ex, "[RouteLink] Failed CreateAsync with Azure Maps data: origin=({OriginLat},{OriginLon}) destination=({DestLat},{DestLon}) avoids={AvoidCount} elapsedMs={ElapsedMs}",
+                _logger.LogError(ex, "[RouteLink] Failed CreateAsync with Azure Maps POST JSON: origin=({OriginLat},{OriginLon}) destination=({DestLat},{DestLon}) avoids={AvoidCount} elapsedMs={ElapsedMs}",
                     origin.Lat, origin.Lon, destination.Lat, destination.Lon, avoids.Length, elapsedMs);
                 throw; // propagate so caller can decide fallback
             }

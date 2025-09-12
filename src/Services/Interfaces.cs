@@ -40,16 +40,16 @@ namespace EmergencyManagementMCP.Services
         Task<RouteLink> CreateAsync(Coordinate origin, Coordinate destination, IEnumerable<string> appliedAvoids, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
         
         /// <summary>
-        /// Creates (or reuses deterministically) a shareable route link artifact with Azure Maps request data.
+        /// Creates (or reuses deterministically) a shareable route link artifact with Azure Maps POST request JSON.
         /// </summary>
         /// <param name="origin">Origin coordinate</param>
         /// <param name="destination">Destination coordinate</param>
         /// <param name="appliedAvoids">Applied avoid rectangles (string form)</param>
-        /// <param name="azureMapsPostData">Azure Maps POST request data for MapPage.tsx to reuse</param>
+        /// <param name="azureMapsPostJson">Raw Azure Maps POST request JSON that MapPage.tsx will send directly to Azure Maps API</param>
         /// <param name="ttl">Time to live (null for default)</param>
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>RouteLink with id + URL</returns>
-        Task<RouteLink> CreateAsync(Coordinate origin, Coordinate destination, IEnumerable<string> appliedAvoids, AzureMapsPostData azureMapsPostData, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
+        Task<RouteLink> CreateAsync(Coordinate origin, Coordinate destination, IEnumerable<string> appliedAvoids, string azureMapsPostJson, TimeSpan? ttl = null, CancellationToken cancellationToken = default);
     }
 
     public interface IGeocodingClient
