@@ -5,7 +5,7 @@ param webAppName string
 param enableContainerLogging bool = true
 
 @description('Container logging level')
-@allowed(['Error', 'Warning', 'Info', 'Verbose'])
+@allowed(['Error', 'Warning', 'Information', 'Verbose', 'Off'])
 param logLevel string = 'Verbose'
 
 // Reference the existing web app
