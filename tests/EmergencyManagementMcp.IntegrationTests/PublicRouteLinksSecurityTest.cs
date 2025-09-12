@@ -35,7 +35,7 @@ namespace EmergencyManagementMcp.IntegrationTests
             _output.WriteLine("  ✓ TTL enforcement (expired links return HTTP 410)");
             _output.WriteLine("  ✓ Request logging with origin/referer tracking");
             _output.WriteLine("");
-            _output.WriteLine("Returns: RouteSpec JSON directly (no intermediate SAS URL)");
+            _output.WriteLine("Returns: Azure Maps API compatible JSON (no ttlMinutes, no intermediate SAS URL)");
             _output.WriteLine("Benefits:");
             _output.WriteLine("  ✓ No function keys in client-side code");
             _output.WriteLine("  ✓ Time-limited access via TTL metadata");
