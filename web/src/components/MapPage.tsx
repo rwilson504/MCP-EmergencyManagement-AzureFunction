@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as atlas from 'azure-maps-control';
 import 'azure-maps-control/dist/atlas.min.css';
+import MapControls from './MapControls';
 
 interface RouteSpec {
   type: 'FeatureCollection';
@@ -29,6 +30,7 @@ export default function MapPage() {
   const mapInstanceRef = useRef<atlas.Map | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [routeBounds, setRouteBounds] = useState<[number, number, number, number] | null>(null);
   const [debugMode] = useState<boolean>(() => {
     try {
       const qp = new URLSearchParams(location.search);
@@ -322,8 +324,10 @@ export default function MapPage() {
         // Fit map to route bounds
         const bbox = atlas.data.BoundingBox.fromData(routeData);
         if (bbox && bbox.length >= 4) {
+          const bounds = bbox as [number, number, number, number];
+          setRouteBounds(bounds);
           map.setCamera({ 
-            bounds: bbox as [number, number, number, number], 
+            bounds: bounds, 
             padding: 80 
           });
           debugLog('Set camera to bounding box', { bbox });
@@ -351,6 +355,16 @@ export default function MapPage() {
     };
   }, []);
 
+  const handleResetView = () => {
+    if (mapInstanceRef.current && routeBounds) {
+      mapInstanceRef.current.setCamera({
+        bounds: routeBounds,
+        padding: 80
+      });
+      debugLog('Reset view to route bounds', { bounds: routeBounds });
+    }
+  };
+
   // Always render the map container so the ref exists on first effect run.
   // Present loading and error states as overlays instead of replacing the container (prevents null ref issue).
   return (
@@ -360,6 +374,14 @@ export default function MapPage() {
         style={{ width: '100%', height: '100%', background: '#0f172a' }}
         aria-label="Emergency Management Route Map"
       />
+
+      {/* Map Controls */}
+      {!loading && !error && (
+        <MapControls 
+          map={mapInstanceRef.current} 
+          onResetView={handleResetView}
+        />
+      )}
 
       {loading && (
         <div
