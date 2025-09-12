@@ -352,6 +352,21 @@ namespace EmergencyManagementMCP.Functions
                         RouteOutputOptions = routeSpec.RouteOutputOptions,
                         TravelMode = routeSpec.TravelMode
                     };
+
+                    // Validate that we have meaningful route data - fix for issue #59
+                    if (azureMapsPostData.Features == null || azureMapsPostData.Features.Length == 0)
+                    {
+                        _logger.LogError("Retrieved route link has empty features array: linkId={LinkId}, routeSpecJson={RouteSpecJson}, requestId={RequestId}", 
+                            id, routeSpecJson, requestId);
+                        
+                        var badData = req.CreateResponse(HttpStatusCode.InternalServerError);
+                        await badData.WriteAsJsonAsync(new { 
+                            error = "Route link contains invalid data (empty features array)", 
+                            requestId,
+                            details = "This may be due to corrupted blob data. Please try generating a new route link."
+                        });
+                        return badData;
+                    }
                 }
 
                 stopwatch.Stop();

@@ -51,9 +51,11 @@ namespace EmergencyManagementMCP.Services
                 _logger.LogInformation("[RouteLink] Begin CreateAsync origin=({OriginLat},{OriginLon}) destination=({DestLat},{DestLon}) avoids={AvoidCount} ttlMinutes={Ttl} storageHost={Host}",
                     origin.Lat, origin.Lon, destination.Lat, destination.Lon, avoids.Length, ttlMinutes, storageHost);
 
-                // Deterministic ID: SHA256 of origin|destination|avoids|day bucket
+                // Deterministic ID: SHA256 of origin|destination|avoids|day bucket|version
+                // Add version suffix to prevent reuse of old blobs with incomplete data  
                 var dayBucket = DateTime.UtcNow.ToString("yyyyMMdd");
-                var input = $"{origin.Lat:F5},{origin.Lon:F5}|{destination.Lat:F5},{destination.Lon:F5}|{string.Join(';', avoids)}|{dayBucket}";
+                var version = "v2"; // Increment if blob format changes
+                var input = $"{origin.Lat:F5},{origin.Lon:F5}|{destination.Lat:F5},{destination.Lon:F5}|{string.Join(';', avoids)}|{dayBucket}|{version}";
                 string id;
                 using (var sha = SHA256.Create())
                 {
@@ -182,9 +184,11 @@ namespace EmergencyManagementMCP.Services
                 _logger.LogInformation("[RouteLink] Begin CreateAsync with Azure Maps POST JSON: origin=({OriginLat},{OriginLon}) destination=({DestLat},{DestLon}) avoids={AvoidCount} ttlMinutes={Ttl} storageHost={Host}",
                     origin.Lat, origin.Lon, destination.Lat, destination.Lon, avoids.Length, ttlMinutes, storageHost);
 
-                // Deterministic ID: SHA256 of origin|destination|avoids|day bucket
+                // Deterministic ID: SHA256 of origin|destination|avoids|day bucket|version
+                // Add version suffix to prevent reuse of old blobs with incomplete data
                 var dayBucket = DateTime.UtcNow.ToString("yyyyMMdd");
-                var input = $"{origin.Lat:F5},{origin.Lon:F5}|{destination.Lat:F5},{destination.Lon:F5}|{string.Join(';', avoids)}|{dayBucket}";
+                var version = "v2"; // Increment if blob format changes
+                var input = $"{origin.Lat:F5},{origin.Lon:F5}|{destination.Lat:F5},{destination.Lon:F5}|{string.Join(';', avoids)}|{dayBucket}|{version}";
                 string id;
                 using (var sha = SHA256.Create())
                 {
