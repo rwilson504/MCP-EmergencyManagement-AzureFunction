@@ -18,3 +18,9 @@ declare global {
     __AZURE_MAPS_CLIENT_ID__?: string;
   }
 }
+
+// Allow importing SVG assets (Vite will transform to URL string by default unless using SVGR plugin)
+declare module '*.svg' {
+  const src: string;
+  export default src;
+}
