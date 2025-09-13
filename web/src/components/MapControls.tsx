@@ -110,7 +110,7 @@ export default function MapControls({ map, onResetView, showDirections, onToggle
     <div 
       style={{
         position: 'absolute',
-        top: '16px',
+        top: '96px', // Account for header height (80px) + margin (16px)
         right: showDirections ? '416px' : '16px', // Adjust position when directions panel is open
         zIndex: 1000,
         background: 'rgba(255, 255, 255, 0.98)',

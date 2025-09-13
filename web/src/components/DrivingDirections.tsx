@@ -82,10 +82,10 @@ export default function DrivingDirections({ isVisible, onClose, routeData }: Dri
     <div
       style={{
         position: 'fixed',
-        top: '0',
+        top: '80px', // Start below the header
         right: '0',
         width: '400px',
-        height: '100vh',
+        height: 'calc(100vh - 80px)', // Adjust height to account for header
         backgroundColor: '#fff',
         boxShadow: '-4px 0 12px rgba(0, 0, 0, 0.15)',
         zIndex: 1001,

@@ -376,10 +376,79 @@ export default function MapPage() {
   // Always render the map container so the ref exists on first effect run.
   // Present loading and error states as overlays instead of replacing the container (prevents null ref issue).
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh' }} aria-label="Emergency Management Route Map Wrapper">
+    <div style={{ position: 'relative', width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }} aria-label="Emergency Management Route Map Wrapper">
+      {/* Header */}
+      <header style={{
+        backgroundColor: '#1e293b',
+        color: '#ffffff',
+        padding: '16px 24px',
+        borderBottom: '2px solid #334155',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '16px',
+        zIndex: 1000,
+        flexShrink: 0
+      }}>
+        {/* Logo SVG */}
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 48 48"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-label="Emergency Management Routing Logo"
+        >
+          {/* Map background */}
+          <rect x="4" y="8" width="40" height="32" rx="4" fill="#374151" stroke="#6b7280" strokeWidth="1"/>
+          
+          {/* Road/route path */}
+          <path
+            d="M8 20 Q16 16 24 20 Q32 24 40 20"
+            stroke="#3b82f6"
+            strokeWidth="3"
+            fill="none"
+            strokeLinecap="round"
+          />
+          
+          {/* Start point marker */}
+          <circle cx="8" cy="20" r="3" fill="#10b981"/>
+          <circle cx="8" cy="20" r="1.5" fill="#ffffff"/>
+          
+          {/* End point marker */}
+          <circle cx="40" cy="20" r="3" fill="#10b981"/>
+          <circle cx="40" cy="20" r="1.5" fill="#ffffff"/>
+          
+          {/* Fire/emergency icon */}
+          <g transform="translate(20, 4)">
+            <path
+              d="M8 6 C8 6 6 8 6 10 C6 12.2 7.8 14 10 14 C12.2 14 14 12.2 14 10 C14 8 12 6 12 6 C11 7 9 7 8 6 Z"
+              fill="#ef4444"
+              stroke="#dc2626"
+              strokeWidth="0.5"
+            />
+            <path
+              d="M10 8 C10 8 9 9 9 10 C9 10.6 9.4 11 10 11 C10.6 11 11 10.6 11 10 C11 9 10 8 10 8 Z"
+              fill="#fbbf24"
+            />
+          </g>
+        </svg>
+        
+        {/* Title */}
+        <h1 style={{
+          margin: 0,
+          fontSize: '24px',
+          fontWeight: '700',
+          color: '#ffffff',
+          fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+        }}>
+          Emergency Management Routing
+        </h1>
+      </header>
+
+      {/* Map Container */}
       <div
         ref={mapRef}
-        style={{ width: '100%', height: '100%', background: '#0f172a' }}
+        style={{ width: '100%', height: '100%', background: '#0f172a', flex: 1 }}
         aria-label="Emergency Management Route Map"
       />
 
