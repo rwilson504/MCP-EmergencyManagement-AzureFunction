@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Controls Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .demo-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: #f3f4f6;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #e5e7eb, #d1d5db);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="map-placeholder">
+            🗺️ Map Area Placeholder
+        </div>
+        
+        <!-- Map Controls -->
+        <div style="
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            max-width: 300px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        ">
+            <!-- Control Toggle Button -->
+            <button style="
+                width: 48px;
+                height: 48px;
+                border: none;
+                background: transparent;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                border-radius: 8px;
+            " title="Show map controls">
+                ⚙️
+            </button>
+            
+            <!-- Expanded Controls -->
+            <div style="padding: 16px; padding-top: 8px;">
+                <!-- Map Style Selector -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #1f2937;">
+                        Map Style
+                    </label>
+                    <select style="
+                        width: 100%;
+                        padding: 8px 12px;
+                        border: 2px solid #d1d5db;
+                        border-radius: 6px;
+                        font-size: 14px;
+                        background-color: #fff;
+                        color: #1f2937;
+                        font-weight: 500;
+                    ">
+                        <option>Road</option>
+                        <option>Satellite</option>
+                        <option>Hybrid</option>
+                        <option>Dark</option>
+                        <option>Light</option>
+                        <option>Night</option>
+                    </select>
+                </div>
+
+                <!-- Layer Toggles -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #1f2937;">
+                        Map Layers
+                    </label>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px;">
+                            <input type="checkbox" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #2563eb;">
+                            <span style="font-size: 14px; color: #1f2937; font-weight: 500;">Route Path</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px;">
+                            <input type="checkbox" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #2563eb;">
+                            <span style="font-size: 14px; color: #1f2937; font-weight: 500;">Waypoints</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px;">
+                            <input type="checkbox" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #2563eb;">
+                            <span style="font-size: 14px; color: #1f2937; font-weight: 500;">Avoid Areas</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Zoom Controls -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #1f2937;">
+                        Zoom
+                    </label>
+                    <div style="display: flex; gap: 8px;">
+                        <button style="
+                            flex: 1;
+                            padding: 10px;
+                            border: 2px solid #d1d5db;
+                            border-radius: 6px;
+                            background-color: #fff;
+                            cursor: pointer;
+                            font-size: 18px;
+                            font-weight: bold;
+                            color: #1f2937;
+                        ">+</button>
+                        <button style="
+                            flex: 1;
+                            padding: 10px;
+                            border: 2px solid #d1d5db;
+                            border-radius: 6px;
+                            background-color: #fff;
+                            cursor: pointer;
+                            font-size: 18px;
+                            font-weight: bold;
+                            color: #1f2937;
+                        ">−</button>
+                    </div>
+                </div>
+
+                <!-- Pitch Controls -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #1f2937;">
+                        Pitch (Tilt)
+                    </label>
+                    <div style="display: flex; gap: 8px;">
+                        <button style="
+                            flex: 1;
+                            padding: 10px;
+                            border: 2px solid #d1d5db;
+                            border-radius: 6px;
+                            background-color: #fff;
+                            cursor: pointer;
+                            font-size: 14px;
+                            font-weight: 500;
+                            color: #1f2937;
+                        ">↗ Up</button>
+                        <button style="
+                            flex: 1;
+                            padding: 10px;
+                            border: 2px solid #d1d5db;
+                            border-radius: 6px;
+                            background-color: #fff;
+                            cursor: pointer;
+                            font-size: 14px;
+                            font-weight: 500;
+                            color: #1f2937;
+                        ">↙ Down</button>
+                    </div>
+                </div>
+
+                <!-- Rotate Controls -->
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #1f2937;">
+                        Rotation
+                    </label>
+                    <div style="display: flex; gap: 8px;">
+                        <button style="
+                            flex: 1;
+                            padding: 10px;
+                            border: 2px solid #d1d5db;
+                            border-radius: 6px;
+                            background-color: #fff;
+                            cursor: pointer;
+                            font-size: 14px;
+                            font-weight: 500;
+                            color: #1f2937;
+                        ">↺ Left</button>
+                        <button style="
+                            flex: 1;
+                            padding: 10px;
+                            border: 2px solid #d1d5db;
+                            border-radius: 6px;
+                            background-color: #fff;
+                            cursor: pointer;
+                            font-size: 14px;
+                            font-weight: 500;
+                            color: #1f2937;
+                        ">↻ Right</button>
+                    </div>
+                </div>
+
+                <!-- Directions Toggle -->
+                <div style="margin-bottom: 16px;">
+                    <button style="
+                        width: 100%;
+                        padding: 12px;
+                        border: 2px solid #2563eb;
+                        border-radius: 6px;
+                        background-color: #2563eb;
+                        color: #fff;
+                        cursor: pointer;
+                        font-size: 14px;
+                        font-weight: 600;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                    ">🧭 Hide Directions</button>
+                </div>
+
+                <!-- Reset View Button -->
+                <button style="
+                    width: 100%;
+                    padding: 10px 12px;
+                    border: 2px solid #d1d5db;
+                    border-radius: 6px;
+                    background-color: #fff;
+                    cursor: pointer;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #1f2937;
+                ">🎯 Reset View</button>
+            </div>
+        </div>
+
+        <!-- Driving Directions Panel -->
+        <div style="
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 400px;
+            height: 100%;
+            background-color: #fff;
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+            z-index: 1001;
+            overflow: hidden;
+            font-family: system-ui, -apple-system, sans-serif;
+        ">
+            <!-- Header -->
+            <div style="
+                padding: 16px 20px;
+                border-bottom: 2px solid #e5e7eb;
+                background-color: #f9fafb;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            ">
+                <div>
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: #1f2937;">
+                        🧭 Driving Directions
+                    </h2>
+                    <p style="margin: 4px 0 0 0; font-size: 14px; color: #6b7280;">
+                        15.2 km • 18m
+                    </p>
+                </div>
+                <button style="
+                    background: none;
+                    border: none;
+                    font-size: 20px;
+                    cursor: pointer;
+                    color: #6b7280;
+                    padding: 4px;
+                    border-radius: 4px;
+                ">✕</button>
+            </div>
+
+            <!-- Directions Content -->
+            <div style="height: calc(100% - 80px); overflow: auto; padding: 0;">
+                <!-- Step 1 -->
+                <div style="
+                    padding: 16px 20px;
+                    border-bottom: 1px solid #f3f4f6;
+                    display: flex;
+                    gap: 12px;
+                    align-items: flex-start;
+                ">
+                    <div style="
+                        min-width: 24px;
+                        height: 24px;
+                        background-color: #10b981;
+                        color: #fff;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        font-weight: bold;
+                        flex-shrink: 0;
+                        margin-top: 2px;
+                    ">1</div>
+                    <div style="flex: 1;">
+                        <p style="margin: 0 0 4px 0; font-size: 14px; color: #1f2937; line-height: 1.4;">
+                            Head north on Main St toward 1st Avenue
+                        </p>
+                        <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                            at 0.00 km
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div style="
+                    padding: 16px 20px;
+                    border-bottom: 1px solid #f3f4f6;
+                    display: flex;
+                    gap: 12px;
+                    align-items: flex-start;
+                ">
+                    <div style="
+                        min-width: 24px;
+                        height: 24px;
+                        background-color: #3b82f6;
+                        color: #fff;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        font-weight: bold;
+                        flex-shrink: 0;
+                        margin-top: 2px;
+                    ">2</div>
+                    <div style="flex: 1;">
+                        <p style="margin: 0 0 4px 0; font-size: 14px; color: #1f2937; line-height: 1.4;">
+                            Turn right onto Highway 101 North
+                        </p>
+                        <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                            at 2.35 km
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div style="
+                    padding: 16px 20px;
+                    border-bottom: 1px solid #f3f4f6;
+                    display: flex;
+                    gap: 12px;
+                    align-items: flex-start;
+                ">
+                    <div style="
+                        min-width: 24px;
+                        height: 24px;
+                        background-color: #3b82f6;
+                        color: #fff;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        font-weight: bold;
+                        flex-shrink: 0;
+                        margin-top: 2px;
+                    ">3</div>
+                    <div style="flex: 1;">
+                        <p style="margin: 0 0 4px 0; font-size: 14px; color: #1f2937; line-height: 1.4;">
+                            Continue straight for 10.8 km
+                        </p>
+                        <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                            at 2.35 km
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Final Step -->
+                <div style="
+                    padding: 16px 20px;
+                    border-bottom: 1px solid #f3f4f6;
+                    display: flex;
+                    gap: 12px;
+                    align-items: flex-start;
+                ">
+                    <div style="
+                        min-width: 24px;
+                        height: 24px;
+                        background-color: #ef4444;
+                        color: #fff;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        font-weight: bold;
+                        flex-shrink: 0;
+                        margin-top: 2px;
+                    ">4</div>
+                    <div style="flex: 1;">
+                        <p style="margin: 0 0 4px 0; font-size: 14px; color: #1f2937; line-height: 1.4;">
+                            You have arrived at your destination
+                        </p>
+                        <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                            at 15.20 km
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

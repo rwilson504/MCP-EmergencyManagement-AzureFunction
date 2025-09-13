@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as atlas from 'azure-maps-control';
 import 'azure-maps-control/dist/atlas.min.css';
 import MapControls from './MapControls';
+import DrivingDirections from './DrivingDirections';
 
 interface RouteSpec {
   type: 'FeatureCollection';
@@ -31,6 +32,8 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [routeBounds, setRouteBounds] = useState<[number, number, number, number] | null>(null);
+  const [routeData, setRouteData] = useState<any>(null);
+  const [showDirections, setShowDirections] = useState(false);
   const [debugMode] = useState<boolean>(() => {
     try {
       const qp = new URLSearchParams(location.search);
@@ -267,6 +270,7 @@ export default function MapPage() {
         }
 
         const routeData = await response.json();
+        setRouteData(routeData); // Store route data for directions panel
         debugLog('Route API success', { ms: (performance.now() - routeCallStarted).toFixed(1), features: Array.isArray(routeData?.features) ? routeData.features.length : 'n/a' });
         if (debugMode) {
           (globalThis as any).__LAST_ROUTE_DATA__ = routeData;
@@ -365,6 +369,10 @@ export default function MapPage() {
     }
   };
 
+  const handleToggleDirections = (show: boolean) => {
+    setShowDirections(show);
+  };
+
   // Always render the map container so the ref exists on first effect run.
   // Present loading and error states as overlays instead of replacing the container (prevents null ref issue).
   return (
@@ -380,6 +388,17 @@ export default function MapPage() {
         <MapControls 
           map={mapInstanceRef.current} 
           onResetView={handleResetView}
+          showDirections={showDirections}
+          onToggleDirections={handleToggleDirections}
+        />
+      )}
+
+      {/* Driving Directions Panel */}
+      {!loading && !error && (
+        <DrivingDirections
+          isVisible={showDirections}
+          onClose={() => setShowDirections(false)}
+          routeData={routeData}
         />
       )}
 
