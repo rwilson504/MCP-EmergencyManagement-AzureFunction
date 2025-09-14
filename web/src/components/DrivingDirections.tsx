@@ -6,14 +6,43 @@ interface DrivingInstruction {
     latitude: number;
     longitude: number;
   };
-  distance?: number;
+  distance?: number;         // meters
+  duration?: number;         // seconds
   maneuver?: string;
+  exitIdentifier?: string;   // e.g., "2A"
+  signs?: string[];          // e.g., ["Portland"]
 }
 
 interface DrivingDirectionsProps {
   isVisible: boolean;
   onClose: () => void;
-  routeData?: any; // Route data from Azure Maps API
+  routeData?: any; // Can be an array of Features (+ trailing summary) or { features: [...] }
+}
+
+// --- helpers ---
+const stripTags = (html?: string) =>
+  (html || '')
+    .replace(/<street>(.*?)<\/street>/gi, '$1')
+    .replace(/<roadNumber>(.*?)<\/roadNumber>/gi, '$1')
+    .replace(/<signpostText>(.*?)<\/signpostText>/gi, '$1')
+    .replace(/<exitNumber>(.*?)<\/exitNumber>/gi, '$1')
+    .replace(/<[^>]+>/g, '')
+    .trim();
+
+const formatTotalTime = (seconds: number) => {
+  const mins = Math.round(seconds / 60);
+  const hrs = Math.floor(mins / 60);
+  const rem = mins % 60;
+  return hrs > 0 ? `${hrs}h ${rem}m` : `${mins}m`;
+};
+
+const metersToKmStr = (m: number) => `${(m / 1000).toFixed(1)} km`;
+
+function normalizeToArray(data: any): any[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.features)) return data.features;
+  return [];
 }
 
 export default function DrivingDirections({ isVisible, onClose, routeData }: DrivingDirectionsProps) {
@@ -25,54 +54,69 @@ export default function DrivingDirections({ isVisible, onClose, routeData }: Dri
     if (!routeData || !isVisible) return;
 
     try {
-      // Extract directions from Azure Maps route data
-      const extractedDirections: DrivingInstruction[] = [];
-      let totalDistanceMeters = 0;
-      let totalTimeSeconds = 0;
+      const items = normalizeToArray(routeData);
 
-      if (routeData.features && Array.isArray(routeData.features)) {
-        for (const feature of routeData.features) {
-          if (feature.properties) {
-            // Check for route summary data
-            if (feature.properties.summary) {
-              totalDistanceMeters = feature.properties.summary.lengthInMeters || 0;
-              totalTimeSeconds = feature.properties.summary.travelTimeInSeconds || 0;
-            }
+      // The Azure Maps response you showed has many Feature steps and
+      // a final non-Feature summary object with properties.type === "RoutePath".
+      // We'll separate them.
+      const features = items.filter((f) => f && f.type === 'Feature');
+      const possibleSummary = items.find((f) => f && f.type !== 'Feature' && f.properties && f.properties.type === 'RoutePath');
 
-            // Extract guidance/instructions
-            if (feature.properties.guidance && feature.properties.guidance.instructions) {
-              for (const instruction of feature.properties.guidance.instructions) {
-                if (instruction.message && instruction.point) {
-                  extractedDirections.push({
-                    message: instruction.message,
-                    point: {
-                      latitude: instruction.point.latitude,
-                      longitude: instruction.point.longitude
-                    },
-                    distance: instruction.routeOffsetInMeters,
-                    maneuver: instruction.maneuver
-                  });
-                }
-              }
-            }
-          }
+      // Build instructions from each Feature
+      const extracted: DrivingInstruction[] = features
+        .map((feature: any) => {
+          const p = feature?.properties || {};
+          const instr = p.instruction || {};
+          const text = stripTags(instr.formattedText) || instr.text || '';
+          const coords = feature?.geometry?.coordinates || [undefined, undefined];
+          const [lon, lat] = coords;
+
+          if (!text || lat == null || lon == null) return null;
+
+          return {
+            message: [
+              text,
+              p.exitIdentifier ? ` (Exit ${p.exitIdentifier})` : '',
+              p.signs && p.signs.length ? ` [Signs: ${p.signs.join(', ')}]` : ''
+            ].join(''),
+            point: {
+              latitude: lat,
+              longitude: lon
+            },
+            distance: typeof p.distanceInMeters === 'number' ? p.distanceInMeters : undefined,
+            duration: typeof p.durationInSeconds === 'number' ? p.durationInSeconds : undefined,
+            maneuver: instr.maneuverType,
+            exitIdentifier: p.exitIdentifier,
+            signs: p.signs
+          } as DrivingInstruction;
+        })
+        .filter(Boolean) as DrivingInstruction[];
+
+      setDirections(extracted);
+
+      // Totals
+      let totalMeters = 0;
+      let totalSeconds = 0;
+
+      if (possibleSummary?.properties) {
+        const sp = possibleSummary.properties;
+        totalMeters = typeof sp.distanceInMeters === 'number' ? sp.distanceInMeters : 0;
+        totalSeconds = typeof sp.durationInSeconds === 'number' ? sp.durationInSeconds : 0;
+      } else {
+        // Fallback: sum from steps
+        for (const d of extracted) {
+          if (typeof d.distance === 'number') totalMeters += d.distance;
+          if (typeof d.duration === 'number') totalSeconds += d.duration;
         }
       }
 
-      setDirections(extractedDirections);
-      
-      // Format distance and time
-      const distanceKm = (totalDistanceMeters / 1000).toFixed(1);
-      const timeMinutes = Math.round(totalTimeSeconds / 60);
-      const timeHours = Math.floor(timeMinutes / 60);
-      const remainingMinutes = timeMinutes % 60;
-      
-      setTotalDistance(`${distanceKm} km`);
-      setTotalTime(timeHours > 0 ? `${timeHours}h ${remainingMinutes}m` : `${timeMinutes}m`);
-
-    } catch (error) {
-      console.error('Error extracting driving directions:', error);
+      setTotalDistance(metersToKmStr(totalMeters));
+      setTotalTime(formatTotalTime(totalSeconds));
+    } catch (err) {
+      console.error('Error extracting driving directions:', err);
       setDirections([]);
+      setTotalDistance('');
+      setTotalTime('');
     }
   }, [routeData, isVisible]);
 
@@ -82,10 +126,10 @@ export default function DrivingDirections({ isVisible, onClose, routeData }: Dri
     <div
       style={{
         position: 'fixed',
-        top: '80px', // Start below the header
+        top: '80px',
         right: '0',
         width: '400px',
-        height: 'calc(100vh - 80px)', // Adjust height to account for header
+        height: 'calc(100vh - 80px)',
         backgroundColor: '#fff',
         boxShadow: '-4px 0 12px rgba(0, 0, 0, 0.15)',
         zIndex: 1001,
@@ -126,8 +170,8 @@ export default function DrivingDirections({ isVisible, onClose, routeData }: Dri
             borderRadius: '4px',
             transition: 'color 0.2s'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#1f2937'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#6b7280'}
+          onMouseEnter={(e) => (e.currentTarget.style.color = '#1f2937')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = '#6b7280')}
           title="Close directions"
           aria-label="Close directions"
         >
@@ -154,7 +198,7 @@ export default function DrivingDirections({ isVisible, onClose, routeData }: Dri
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>🗺️</div>
             <p style={{ fontSize: '16px', margin: '0 0 8px 0' }}>No directions available</p>
             <p style={{ fontSize: '14px', margin: '0' }}>
-              Route data may not contain detailed turn-by-turn instructions.
+              Route data may not contain detailed turn by turn instructions.
             </p>
           </div>
         ) : (
@@ -174,7 +218,8 @@ export default function DrivingDirections({ isVisible, onClose, routeData }: Dri
                   style={{
                     minWidth: '24px',
                     height: '24px',
-                    backgroundColor: index === 0 ? '#10b981' : index === directions.length - 1 ? '#ef4444' : '#3b82f6',
+                    backgroundColor:
+                      index === 0 ? '#10b981' : index === directions.length - 1 ? '#ef4444' : '#3b82f6',
                     color: '#fff',
                     borderRadius: '50%',
                     display: 'flex',
@@ -189,21 +234,32 @@ export default function DrivingDirections({ isVisible, onClose, routeData }: Dri
                   {index + 1}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ 
-                    margin: '0 0 4px 0', 
-                    fontSize: '14px', 
-                    color: '#1f2937',
-                    lineHeight: '1.4'
-                  }}>
+                  <p
+                    style={{
+                      margin: '0 0 4px 0',
+                      fontSize: '14px',
+                      color: '#1f2937',
+                      lineHeight: '1.4'
+                    }}
+                  >
                     {direction.message}
                   </p>
-                  {direction.distance !== undefined && (
-                    <p style={{ 
-                      margin: '0', 
-                      fontSize: '12px', 
-                      color: '#6b7280'
-                    }}>
-                      at {(direction.distance / 1000).toFixed(2)} km
+
+                  {/* Optional per-step details */}
+                  {(direction.distance != null || direction.duration != null) && (
+                    <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>
+                      {direction.distance != null && `dist ${(direction.distance / 1000).toFixed(2)} km`}
+                      {direction.distance != null && direction.duration != null && ' • '}
+                      {direction.duration != null && `time ${Math.round(direction.duration / 60)} min`}
+                    </p>
+                  )}
+
+                  {/* Signs / exit callouts if you want a second line */}
+                  {(direction.exitIdentifier || (direction.signs && direction.signs.length)) && (
+                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#9ca3af' }}>
+                      {direction.exitIdentifier ? `Exit ${direction.exitIdentifier}` : ''}
+                      {direction.exitIdentifier && direction.signs && direction.signs.length ? ' • ' : ''}
+                      {direction.signs && direction.signs.length ? `Signs: ${direction.signs.join(', ')}` : ''}
                     </p>
                   )}
                 </div>

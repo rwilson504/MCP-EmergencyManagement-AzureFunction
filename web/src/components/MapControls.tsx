@@ -138,14 +138,49 @@ export default function MapControls({ map, onResetView, showDirections, onToggle
           justifyContent: 'center',
           fontSize: '18px',
           borderRadius: '8px',
-          transition: 'background-color 0.2s'
+          transition: 'background-color 0.2s, box-shadow 0.2s',
+          color: '#111827', // High contrast (gray-900)
+          fontWeight: 600,
+          boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.08)'
         }}
         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         title={isExpanded ? 'Hide map controls' : 'Show map controls'}
         aria-label={isExpanded ? 'Hide map controls' : 'Show map controls'}
       >
-        {isExpanded ? '✕' : '⚙️'}
+        {isExpanded ? (
+          // Use a heavier × symbol for better contrast & consistency across platforms
+          <span
+            style={{
+              fontSize: '24px',
+              lineHeight: 1,
+              fontWeight: 700,
+              color: '#111827',
+              textShadow: '0 1px 2px rgba(0,0,0,0.15)'
+            }}
+            aria-hidden="true"
+          >
+            ×
+          </span>
+        ) : (
+          // Custom inline SVG gear icon (dark, high contrast) instead of emoji which can render faint
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#111827"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            role="img"
+            aria-label="Show map controls"
+          >
+            <title>Show map controls</title>
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09c.7 0 1.31-.4 1.51-1a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06c.46.46 1.12.61 1.82.33.61-.25 1-.86 1-1.51V3a2 2 0 0 1 4 0v.09c0 .7.4 1.31 1 1.51.7.28 1.36.13 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.46.46-.61 1.12-.33 1.82.25.61.86 1 1.51 1H21a2 2 0 0 1 0 4h-.09c-.7 0-1.31.4-1.51 1Z" />
+          </svg>
+        )}
       </button>
 
       {/* Expanded Controls */}
