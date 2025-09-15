@@ -89,6 +89,9 @@ namespace EmergencyManagementMCP.Tools
 
             try
             {
+                // Apply default: if caller omits persistShareLink (null), treat it as true so a share link is created by default.
+                // This avoids relying on Azure Functions binding honoring optional parameter default values.
+                bool persistShareLinkEffective = persistShareLink ?? true;
                 // Step 1: Geocode origin address
                 _logger.LogDebug("Step 1: Geocoding origin address, traceId={TraceId}", traceId);
                 var stepStopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -180,7 +183,7 @@ namespace EmergencyManagementMCP.Tools
                 // Step 10: Build response
                 var appliedAvoidsArr = avoidRectangles.Select(r => r.ToString()).ToArray();
                 RouteLink? shareLink = null;
-                if (persistShareLink == true)
+                if (persistShareLinkEffective)
                 {
                     try
                     {

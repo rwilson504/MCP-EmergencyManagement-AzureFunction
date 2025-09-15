@@ -90,6 +90,8 @@ namespace EmergencyManagementMCP.Tools
 
             try
             {
+                // Apply default: if persistShareLink not provided, default to true to create a share link by default.
+                bool persistShareLinkEffective = persistShareLink ?? true;
                 var origin = new Coordinate { Lat = originLat, Lon = originLon };
                 var destination = new Coordinate { Lat = destinationLat, Lon = destinationLon };
 
@@ -161,7 +163,7 @@ namespace EmergencyManagementMCP.Tools
                 // 8. Build response
                 var appliedAvoidsArr = avoidRectangles.Select(r => r.ToString()).ToArray();
                 RouteLink? shareLink = null;
-                if (persistShareLink == true)
+                if (persistShareLinkEffective)
                 {
                     try
                     {
